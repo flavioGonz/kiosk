@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, cloneElement, ReactElement } from 'react';
 import { db, type User } from '../db';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -381,7 +381,7 @@ function SidebarLink({ icon, label, active, collapsed, onClick }: SidebarLinkPro
                 }`}
         >
             <div className={`shrink-0 transition-colors ${active ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`}>
-                {React.cloneElement(icon as React.ReactElement<any>, { size: 18, strokeWidth: active ? 3 : 2 })}
+                {cloneElement(icon as ReactElement<any>, { size: 18, strokeWidth: active ? 3 : 2 })}
             </div>
             {!collapsed && (
                 <motion.span

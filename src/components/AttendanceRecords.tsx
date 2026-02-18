@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, User, Search, Download, Plus, Calendar, CheckCircle2, AlertCircle, Pencil, X, Save, MessageSquare, Smartphone } from 'lucide-react';
 import { db, type Attendance, type User as UserType } from '../db';
 import { Modal } from './Modal';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
 export function AttendanceRecords() {
@@ -249,7 +249,7 @@ export function AttendanceRecords() {
 
             sheet.autoFilter = 'A1:J1';
 
-            const usersWithMarks = [...new Set(allAttendances.map(a => a.userId))];
+            const usersWithMarks = Array.from(new Set(allAttendances.map(a => a.userId)));
             usersWithMarks.forEach(uid => {
                 const userMarks = allAttendances.filter(a => a.userId === uid);
                 const userName = userMarks[0].userName.substring(0, 30);

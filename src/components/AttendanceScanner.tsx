@@ -176,11 +176,11 @@ export function AttendanceScanner({ onMatch, onUnknownFace, onBack }: Attendance
                                     className="absolute inset-0 pointer-events-none flex items-center justify-center"
                                 >
                                     <img
-                                        src="/face-wireframe.png"
-                                        className="w-full h-full object-cover mix-blend-screen"
-                                        alt="Scanner Wireframe"
+                                        src="/reco.jpg"
+                                        className="w-full h-full object-cover opacity-60"
+                                        alt="Scanner Reference"
                                     />
-                                    <div className="absolute inset-0 bg-blue-500/5 animate-pulse" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent animate-pulse" />
                                 </motion.div>
                             )}
 

@@ -121,9 +121,9 @@ function Kiosk() {
               <div className="relative group">
                 <div className="absolute inset-0 bg-blue-500/10 rounded-[3rem] blur-2xl group-hover:bg-blue-500/20 transition-all" />
                 <div className="relative w-80 h-[400px] rounded-[3rem] border-[12px] border-white shadow-2xl overflow-hidden bg-slate-100 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-500">
-                  {/* Futuristic Face Wireframe as static placeholder */}
+                  {/* Updated Face Photo as static placeholder */}
                   <img
-                    src="/face-wireframe.png"
+                    src="/reco.jpg"
                     className="w-full h-full object-cover opacity-80"
                     alt="Biometric Scan"
                   />
@@ -370,7 +370,7 @@ function AdminView() {
   )
 }
 
-export function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>

@@ -119,8 +119,8 @@ export function TicketPrinter({ user, type, timestamp, onDone }: TicketPrinterPr
                         <p className="text-[10px] mt-1">{dateStr}</p>
                     </div>
 
-                    <div className="flex justify-center p-2">
-                        <QRCodeSVG value={JSON.stringify({ dni: user.dni, timestamp, type })} size={80} />
+                    <div className="flex justify-center p-4">
+                        <QRCodeSVG value={JSON.stringify({ name: user.name, dni: user.dni, timestamp, type })} size={120} />
                     </div>
 
                     <div className="text-[8px] leading-tight">

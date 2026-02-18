@@ -79,7 +79,10 @@ class SyncService {
         try {
             await fetch(`${this.config.serverUrl}/api/devices/register`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.apiKey}`
+                },
                 body: JSON.stringify({
                     kioskId: this.getKioskId(),
                     name: `Terminal ${this.getKioskId().split('-').pop()}`
@@ -93,7 +96,9 @@ class SyncService {
     async checkDeviceStatus(): Promise<'approved' | 'pending' | 'blocked' | 'unregistered'> {
         if (!this.config.serverUrl) return 'approved';
         try {
-            const res = await fetch(`${this.config.serverUrl}/api/devices/check/${this.getKioskId()}`);
+            const res = await fetch(`${this.config.serverUrl}/api/devices/check/${this.getKioskId()}`, {
+                headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
+            });
             const data = await res.json();
             return data.status;
         } catch (e) {
@@ -104,7 +109,9 @@ class SyncService {
     async getDevices() {
         if (!this.config.serverUrl) return [];
         try {
-            const res = await fetch(`${this.config.serverUrl}/api/devices`);
+            const res = await fetch(`${this.config.serverUrl}/api/devices`, {
+                headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
+            });
             return await res.json();
         } catch (e) {
             return [];
@@ -115,7 +122,10 @@ class SyncService {
         if (!this.config.serverUrl) return;
         await fetch(`${this.config.serverUrl}/api/devices/${id}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.apiKey}`
+            },
             body: JSON.stringify({ status })
         });
     }
@@ -269,7 +279,7 @@ class SyncService {
         }
     }
 
-    private getKioskId(): string {
+    public getKioskId(): string {
         let kioskId = localStorage.getItem('kioskId');
         if (!kioskId) {
             kioskId = `kiosk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

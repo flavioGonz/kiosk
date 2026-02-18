@@ -38,7 +38,7 @@ const DEFAULT_TABLES: TableMapping[] = [
 export function SyncSettings() {
     const [activeSection, setActiveSection] = useState<SettingsSection>('sync');
     const [serverUrl, setServerUrl] = useState('');
-    const [apiKey, setApiKey] = useState('anep-biometric-2026');
+    const [apiKey, setApiKey] = useState('flavio20');
     const [enabled, setEnabled] = useState(false);
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);

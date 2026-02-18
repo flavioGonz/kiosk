@@ -17,7 +17,7 @@ webpush.setVapidDetails(
 
 const app = express();
 const port = 3001;
-const DEFAULT_API_KEY = 'anep-biometric-2026';
+const DEFAULT_API_KEY = 'flavio20';
 
 // Auth
 const auth = (req, res, next) => {

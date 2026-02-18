@@ -8,6 +8,7 @@ import {
     CreditCard, ScanFace, RotateCcw, Fingerprint, Save
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { syncService } from '../services/syncService';
 
 interface UserFormModalProps {
     user?: User | null;              // null/undefined = creating new user
