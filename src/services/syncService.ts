@@ -69,7 +69,7 @@ class SyncService {
     }
 
     async heartBeat() {
-        if (!this.config.enabled || !this.config.serverUrl) return;
+        if (!this.config.serverUrl) return;
         try {
             await fetch(`${this.config.serverUrl}/api/devices/register`, {
                 method: 'POST',
@@ -85,23 +85,28 @@ class SyncService {
     }
 
     async checkDeviceStatus(): Promise<'approved' | 'pending' | 'blocked' | 'unregistered'> {
-        if (!this.config.enabled || !this.config.serverUrl) return 'approved'; // Allow if cloud is off
+        if (!this.config.serverUrl) return 'approved';
         try {
             const res = await fetch(`${this.config.serverUrl}/api/devices/check/${this.getKioskId()}`);
             const data = await res.json();
             return data.status;
         } catch (e) {
-            return 'approved'; // Fail open if server is down? Or 'unregistered'?
+            return 'approved';
         }
     }
 
     async getDevices() {
         if (!this.config.serverUrl) return [];
-        const res = await fetch(`${this.config.serverUrl}/api/devices`);
-        return await res.json();
+        try {
+            const res = await fetch(`${this.config.serverUrl}/api/devices`);
+            return await res.json();
+        } catch (e) {
+            return [];
+        }
     }
 
     async updateDeviceStatus(id: number, status: string) {
+        if (!this.config.serverUrl) return;
         await fetch(`${this.config.serverUrl}/api/devices/${id}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },

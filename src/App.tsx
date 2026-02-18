@@ -39,19 +39,19 @@ function Kiosk() {
     // Check server connection and device moderation
     const checkServerAndDevice = async () => {
       const config = syncService.getConfig()
-      if (config.serverUrl && config.enabled) {
+      if (config.serverUrl) {
         const result = await syncService.testConnection()
         setServerOnline(result.success)
 
         if (result.success) {
-          // Heartbeat and Status Check
+          // Heartbeat and Status Check always run if server is set
           await syncService.heartBeat();
           const status = await syncService.checkDeviceStatus();
           setDeviceStatus(status);
         }
       } else {
         setServerOnline(false)
-        setDeviceStatus('approved') // Allow local use if cloud off
+        setDeviceStatus('approved') // Allow local use if no server is set
       }
     }
     checkServerAndDevice()

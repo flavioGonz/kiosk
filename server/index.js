@@ -73,6 +73,7 @@ app.post('/api/devices/register', async (req, res) => {
              RETURNING *`,
             [kioskId, name]
         );
+        console.log(`[Device] Registered/Heartbeat: ${kioskId} (${name}) - Status: ${result.rows[0].status}`);
         res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ error: 'Failed to register device' });
