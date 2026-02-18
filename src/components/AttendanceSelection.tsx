@@ -8,9 +8,12 @@ interface AttendanceSelectionProps {
     user: User;
     photo: string | null;
     onComplete: (type: string) => void;
+    onBack?: () => void;
 }
 
-export function AttendanceSelection({ user, photo, onComplete }: AttendanceSelectionProps) {
+import { X } from 'lucide-react';
+
+export function AttendanceSelection({ user, photo, onComplete, onBack }: AttendanceSelectionProps) {
     const [lastMark, setLastMark] = useState<Attendance | null>(null);
     const [loading, setLoading] = useState(true);
     const [elapsedTime, setElapsedTime] = useState<string | null>(null);
@@ -160,7 +163,17 @@ export function AttendanceSelection({ user, photo, onComplete }: AttendanceSelec
     if (loading) return null;
 
     return (
-        <div className="space-y-4 w-full max-w-6xl mx-auto px-4">
+        <div className="relative space-y-4 w-full max-w-6xl mx-auto px-4">
+            {/* Close Button */}
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    className="absolute -top-16 right-4 p-4 bg-white/10 hover:bg-slate-100 rounded-2xl text-slate-400 transition-all active:scale-95 border border-slate-200 z-50"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+            )}
+
             {/* Header: Proportional Layout */}
             <div className="bg-white border border-slate-200 p-8 rounded-2xl flex flex-col md:flex-row items-center gap-10">
                 {/* User Photo LARGER MORE PROMINENT */}

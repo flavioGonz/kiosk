@@ -63,8 +63,8 @@ class SyncService {
     }
 
     async fullSync(): Promise<{ success: boolean; downloaded: number; uploaded: number }> {
-        const recordsRes = await this.syncPendingRecords();
-        const employeesRes = await this.syncEmployees();
+        const recordsRes = await this.syncPendingRecords(true);
+        const employeesRes = await this.syncEmployees(true);
         await this.heartBeat();
 
         return {
@@ -121,14 +121,15 @@ class SyncService {
     }
 
     async manualSync(): Promise<{ success: boolean; synced: number; errors: number }> {
-        return await this.syncPendingRecords();
+        return await this.syncPendingRecords(true);
     }
 
     /**
      * SYNC EMPLOYEES: Download from server + Upload new local ones
      */
-    async syncEmployees(): Promise<{ success: boolean; downloaded: number; uploaded: number }> {
-        if (!this.config.enabled || !this.config.serverUrl) return { success: false, downloaded: 0, uploaded: 0 };
+    async syncEmployees(force = false): Promise<{ success: boolean; downloaded: number; uploaded: number }> {
+        if (!force && (!this.config.enabled || !this.config.serverUrl)) return { success: false, downloaded: 0, uploaded: 0 };
+        if (force && !this.config.serverUrl) return { success: false, downloaded: 0, uploaded: 0 };
 
         try {
             // 1. DOWNLOAD FROM SERVER
@@ -216,8 +217,9 @@ class SyncService {
     /**
      * SYNC ATTENDANCE RECODS
      */
-    private async syncPendingRecords(): Promise<{ success: boolean; synced: number; errors: number }> {
-        if (!this.config.enabled || !this.config.serverUrl) return { success: false, synced: 0, errors: 0 };
+    private async syncPendingRecords(force = false): Promise<{ success: boolean; synced: number; errors: number }> {
+        if (!force && (!this.config.enabled || !this.config.serverUrl)) return { success: false, synced: 0, errors: 0 };
+        if (force && !this.config.serverUrl) return { success: false, synced: 0, errors: 0 };
 
         try {
             const pendingRecords = await db.attendance

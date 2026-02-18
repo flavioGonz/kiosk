@@ -120,23 +120,21 @@ function Kiosk() {
             >
               <div className="relative group">
                 <div className="absolute inset-0 bg-blue-500/10 rounded-[3rem] blur-2xl group-hover:bg-blue-500/20 transition-all" />
-                <div className="relative w-80 h-[400px] rounded-[3rem] border-[12px] border-white shadow-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                  <div className="flex flex-col items-center space-y-4 opacity-20">
-                    <div className="w-24 h-24 border-4 border-slate-400 rounded-full flex items-center justify-center">
-                      <div className="w-12 h-12 bg-slate-400 rounded-full" />
-                    </div>
-                    <div className="w-32 h-4 bg-slate-400 rounded-full" />
-                    <div className="w-24 h-4 bg-slate-400 rounded-full" />
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+                <div className="relative w-80 h-[400px] rounded-[3rem] border-[12px] border-white shadow-2xl overflow-hidden bg-slate-100 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-500">
+                  {/* Futuristic Face Wireframe as static placeholder */}
+                  <img
+                    src="/face-wireframe.png"
+                    className="w-full h-full object-cover opacity-80"
+                    alt="Biometric Scan"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-900/60 to-transparent" />
                 </div>
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setView('scanner')}
-                  className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-10 py-5 bg-blue-600 text-white rounded-2xl shadow-2xl shadow-blue-600/40 flex items-center gap-3 active:bg-blue-700 transition-all border-4 border-white"
+                  className="absolute -bottom-6 left-0 right-0 mx-auto w-fit px-10 py-5 bg-blue-600 text-white rounded-2xl shadow-2xl shadow-blue-600/40 flex items-center gap-3 active:bg-blue-700 transition-all border-4 border-white z-20"
                 >
                   <Clock className="w-6 h-6" />
                   <span className="text-sm font-black uppercase tracking-widest italic">Registrar Marca</span>
@@ -159,6 +157,7 @@ function Kiosk() {
               className="w-full flex flex-col items-center gap-8"
             >
               <AttendanceScanner
+                onBack={() => setView('landing')}
                 onMatch={(user, photo) => {
                   setCurrentUser(user)
                   setCurrentPhoto(photo)
@@ -204,6 +203,7 @@ function Kiosk() {
             <AttendanceSelection
               user={currentUser}
               photo={currentPhoto}
+              onBack={() => setView('scanner')}
               onComplete={(type) => {
                 setAttendanceType(type)
                 setLastTimestamp(Date.now())

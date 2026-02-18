@@ -141,9 +141,10 @@ async function sendNotificationToEmployee(userDni, payload) {
 app.get('/api/employees', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM employees ORDER BY id DESC');
+        console.log(`[Sync] Serving ${result.rowCount} employees to terminal`);
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
+        console.error('[Sync Error] GET employees:', err);
         res.status(500).json({ error: 'Database error' });
     }
 });
@@ -166,9 +167,10 @@ app.post('/api/employees', async (req, res) => {
              RETURNING *`,
             [name, dni, email, phone, whatsapp, pin, JSON.stringify(face_descriptors), photos]
         );
+        console.log(`[Sync] Saved/Updated employee: ${name} (${dni})`);
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(err);
+        console.error('[Sync Error] POST employee:', err);
         res.status(500).json({ error: 'Error saving employee' });
     }
 });

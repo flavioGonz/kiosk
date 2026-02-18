@@ -8,9 +8,12 @@ import { ProcessingSplash } from './ProcessingSplash';
 interface AttendanceScannerProps {
     onMatch: (user: User, photo: string) => void;
     onUnknownFace: () => void;
+    onBack?: () => void;
 }
 
-export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerProps) {
+import { X } from 'lucide-react';
+
+export function AttendanceScanner({ onMatch, onUnknownFace, onBack }: AttendanceScannerProps) {
     const webcamRef = useRef<Webcam>(null);
     const { modelsLoaded, detectFace, matchFace } = useFaceRecognition();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -134,6 +137,16 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
                     )}
                 </motion.div>
 
+                {/* Close Button */}
+                {onBack && (
+                    <button
+                        onClick={onBack}
+                        className="absolute top-8 right-8 z-50 p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl text-white transition-all active:scale-95 border border-white/10"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                )}
+
                 {/* Camera Frame */}
                 <div className="relative w-[500px] aspect-[3/4] rounded-[3rem] overflow-hidden border-[12px] border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.3)] bg-black/20 backdrop-blur-3xl">
                     {!modelsLoaded ? (
@@ -154,6 +167,22 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
                                     height: 1280,
                                 }}
                             />
+
+                            {/* Ingenious Idle State: Futuristic Scan Wireframe when no face detected */}
+                            {confidence === null && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 0.6 }}
+                                    className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                                >
+                                    <img
+                                        src="/face-wireframe.png"
+                                        className="w-full h-full object-cover mix-blend-screen"
+                                        alt="Scanner Wireframe"
+                                    />
+                                    <div className="absolute inset-0 bg-blue-500/5 animate-pulse" />
+                                </motion.div>
+                            )}
 
                             {/* Overlay scanning effect */}
                             <div className="absolute inset-0 pointer-events-none">
