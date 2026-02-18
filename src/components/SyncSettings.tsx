@@ -43,6 +43,7 @@ export function SyncSettings() {
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number } | null>(null);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [showSyncModal, setShowSyncModal] = useState(false);
 
     // Database config
@@ -122,10 +123,15 @@ export function SyncSettings() {
     const handleTestConnection = async () => {
         setTesting(true);
         setTestResult(null);
-        syncService.updateConfig({ serverUrl, apiKey, enabled: false });
-        const result = await syncService.testConnection();
-        setTestResult(result);
-        setTesting(false);
+        try {
+            syncService.updateConfig({ serverUrl, apiKey, enabled: false });
+            const result = await syncService.testConnection();
+            setTestResult(result);
+        } catch (e) {
+            setTestResult({ success: false, message: 'Error inesperado al intentar conectar' });
+        } finally {
+            setTesting(false);
+        }
     };
 
     const handleManualSync = async () => {
@@ -136,6 +142,7 @@ export function SyncSettings() {
             const result = await syncService.fullSync();
             setSyncResult(result);
         } catch (e) {
+            console.error('Manual sync failed:', e);
             setSyncResult({ success: false, downloaded: 0, uploaded: 0 });
         } finally {
             setSyncing(false);
@@ -247,6 +254,28 @@ export function SyncSettings() {
                                 </button>
                             </div>
 
+                            {window.location.protocol === 'https:' && serverUrl.startsWith('http:') && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[9px] font-bold text-amber-700 uppercase tracking-tight flex items-start gap-2">
+                                    <Shield className="w-4 h-4 text-amber-500 shrink-0" />
+                                    <span>
+                                        Advertencia: Estás usando HTTPS pero el Endpoint es HTTP.
+                                        El navegador podría bloquear la conexión (Mixed Content).
+                                        Usa <b>https://</b> si es posible.
+                                    </span>
+                                </div>
+                            )}
+
+                            {testResult && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`p-4 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3 ${testResult.success ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}
+                                >
+                                    {testResult.success ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                                    {testResult.message}
+                                </motion.div>
+                            )}
+
                             {/* EXPLICIT POSTGRES BLOCK */}
                             <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-4">
                                 <div className="flex items-center justify-between">
@@ -292,7 +321,7 @@ export function SyncSettings() {
                                                     {syncing ? 'Sincronizando...' : syncResult?.success ? '¡Sincronización Exitosa!' : 'Error de Conexión'}
                                                 </h3>
                                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-8">
-                                                    {syncing ? 'Transferiendo datos biométricos' : 'Proceso finalizado correctamente'}
+                                                    {syncing ? 'Transferiendo datos biométricos' : syncResult?.success ? 'Proceso finalizado correctamente' : 'Verifique su conexión a internet o URL'}
                                                 </p>
 
                                                 {syncResult && (

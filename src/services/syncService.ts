@@ -62,10 +62,16 @@ class SyncService {
         }
     }
 
-    async fullSync() {
-        await this.syncPendingRecords();
-        await this.syncEmployees();
+    async fullSync(): Promise<{ success: boolean; downloaded: number; uploaded: number }> {
+        const recordsRes = await this.syncPendingRecords();
+        const employeesRes = await this.syncEmployees();
         await this.heartBeat();
+
+        return {
+            success: recordsRes.success && employeesRes.success,
+            downloaded: employeesRes.downloaded,
+            uploaded: employeesRes.uploaded + recordsRes.synced
+        };
     }
 
     async heartBeat() {
@@ -272,12 +278,24 @@ class SyncService {
 
     async testConnection(): Promise<{ success: boolean; message: string }> {
         if (!this.config.serverUrl) return { success: false, message: 'No server URL configured' };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
         try {
-            const response = await fetch(`${this.config.serverUrl}/api/health`);
-            if (response.ok) return { success: true, message: 'Connection successful' };
-            return { success: false, message: `Server returned ${response.status}` };
+            const response = await fetch(`${this.config.serverUrl}/api/health`, {
+                signal: controller.signal,
+                headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
+            });
+            clearTimeout(timeoutId);
+
+            if (response.ok) return { success: true, message: 'Enlace establecido con el servidor' };
+            if (response.status === 401) return { success: false, message: 'Error 401: Clave (Secret) incorrecta' };
+            return { success: false, message: `Error del servidor: ${response.status}` };
         } catch (error: any) {
-            return { success: false, message: `Connection failed: ${error.message || error}` };
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') return { success: false, message: 'Tiempo de espera agotado (Timeout)' };
+            return { success: false, message: `No se pudo encontrar el servidor: ${error.message}` };
         }
     }
 }
