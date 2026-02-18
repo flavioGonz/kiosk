@@ -27,6 +27,7 @@ export interface Attendance {
     photo?: string;
     synced: boolean;
     notes?: string; // For manual entries or absence reasons
+    kioskId?: string; // ID of the terminal that registered the event
     modifiedAt?: number; // Timestamp when manually edited
     modifiedBy?: string; // Who modified it
     observation?: string; // Admin observation on modification
@@ -36,6 +37,7 @@ export interface UnknownFace {
     id?: number;
     timestamp: number;
     photo?: string;
+    kioskId?: string;
     synced: boolean;
 }
 
@@ -46,10 +48,10 @@ export class KioskDatabase extends Dexie {
 
     constructor() {
         super('KioskDB');
-        this.version(5).stores({ // Increased version
+        this.version(6).stores({ // Increased version to 6
             users: '++id, &dni, name, email',
-            attendance: '++id, userId, type, typeId, timestamp, synced, userDni',
-            unknownFaces: '++id, timestamp, synced'
+            attendance: '++id, userId, type, typeId, timestamp, synced, userDni, kioskId',
+            unknownFaces: '++id, timestamp, synced, kioskId'
         });
     }
 }

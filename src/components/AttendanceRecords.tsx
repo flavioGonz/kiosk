@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, User, Search, Download, Plus, Calendar, CheckCircle2, AlertCircle, Pencil, X, Save, MessageSquare } from 'lucide-react';
+import { Activity, User, Search, Download, Plus, Calendar, CheckCircle2, AlertCircle, Pencil, X, Save, MessageSquare, Smartphone } from 'lucide-react';
 import { db, type Attendance, type User as UserType } from '../db';
 import { Modal } from './Modal';
 import ExcelJS from 'exceljs';
@@ -182,6 +182,7 @@ export function AttendanceRecords() {
                 notes: manualEntry.notes,
                 modifiedAt: Date.now(),
                 modifiedBy: 'Admin (Manual)',
+                kioskId: 'ADMIN-CONSOLE'
             });
 
             setStatus({ type: 'success', message: 'Registro manual agregado correctamente' });
@@ -206,7 +207,7 @@ export function AttendanceRecords() {
 
             const sheet = workbook.addWorksheet('Reporte General');
 
-            const headerRow = sheet.addRow(['ID', 'COLABORADOR', 'DOCUMENTO', 'TIPO', 'FECHA', 'HORA', 'NOTAS / ESTADO', 'OBSERVACIÓN', 'MODIFICADO']);
+            const headerRow = sheet.addRow(['ID', 'COLABORADOR', 'DOCUMENTO', 'TERMINAL', 'TIPO', 'FECHA', 'HORA', 'NOTAS / ESTADO', 'OBSERVACIÓN', 'MODIFICADO']);
             headerRow.eachCell((cell) => {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
                 cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
@@ -220,6 +221,7 @@ export function AttendanceRecords() {
                     att.id,
                     att.userName.toUpperCase(),
                     att.userDni || 'N/A',
+                    att.kioskId || 'N/A',
                     att.type.toUpperCase(),
                     date.toLocaleDateString(),
                     date.toLocaleTimeString(),
@@ -228,7 +230,7 @@ export function AttendanceRecords() {
                     att.modifiedAt ? new Date(att.modifiedAt).toLocaleString() : '',
                 ]);
 
-                const typeCell = row.getCell(4);
+                const typeCell = row.getCell(5);
                 if (att.type === 'Entrada') typeCell.font = { color: { argb: 'FF059669' }, bold: true };
                 if (att.type === 'Salida') typeCell.font = { color: { argb: 'FFDC2626' }, bold: true };
                 if (att.type === 'Falta') typeCell.font = { color: { argb: 'FF7C3AED' }, bold: true };
@@ -245,7 +247,7 @@ export function AttendanceRecords() {
                 if (col.number === 8) col.width = 30;
             });
 
-            sheet.autoFilter = 'A1:I1';
+            sheet.autoFilter = 'A1:J1';
 
             const usersWithMarks = [...new Set(allAttendances.map(a => a.userId))];
             usersWithMarks.forEach(uid => {
@@ -353,7 +355,7 @@ export function AttendanceRecords() {
                         <thead>
                             <tr className="bg-slate-50 border-b border-gray-100">
                                 <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400">Funcionario</th>
-                                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400">Documento / Tel</th>
+                                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400">Terminal / DNI</th>
                                 <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400">Fecha & Hora</th>
                                 <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400 text-center">Tipo</th>
                                 <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-black text-slate-400 text-center">Cómputo Diario</th>
@@ -410,8 +412,11 @@ export function AttendanceRecords() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Smartphone className="w-3 h-3 text-slate-300" />
+                                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-32" title={attendance.kioskId}>{attendance.kioskId || 'N/A'}</span>
+                                                        </div>
                                                         <span className="text-[11px] font-black text-blue-600 font-mono">{attendance.userDni || '---'}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 font-mono">{attendance.userPhone || '---'}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">

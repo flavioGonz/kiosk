@@ -249,7 +249,9 @@ function Kiosk() {
 
 function AdminView() {
   const navigate = useNavigate()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return sessionStorage.getItem('adminSession') === 'active'
+  })
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -257,6 +259,7 @@ function AdminView() {
     e.preventDefault()
     if (username === 'admin' && password === 'flavio20') {
       setIsLoggedIn(true)
+      sessionStorage.setItem('adminSession', 'active')
     } else {
       alert('Credenciales incorrectas')
     }

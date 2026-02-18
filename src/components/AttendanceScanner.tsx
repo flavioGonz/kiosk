@@ -19,8 +19,8 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
     const [lastUnknownTime, setLastUnknownTime] = useState<number>(0);
 
     // Audio effects
-    const successAudio = useRef(new Audio('/sounds/success.mp3'));
-    const errorAudio = useRef(new Audio('/sounds/error.mp3'));
+    const successAudio = useRef(new Audio('/accesocorrecto.mp3'));
+    const errorAudio = useRef(new Audio('/rostrodesconocido.mp3'));
 
     const playSound = (type: 'success' | 'error') => {
         const audio = type === 'success' ? successAudio.current : errorAudio.current;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { db, type User, type Attendance } from '../db';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, LogOut, Coffee, Timer, UserCheck, Clock, ArrowRightCircle, Activity, AlertCircle } from 'lucide-react';
+import { syncService } from '../services/syncService';
 
 interface AttendanceSelectionProps {
     user: User;
@@ -119,7 +120,8 @@ export function AttendanceSelection({ user, photo, onComplete }: AttendanceSelec
                     timestamp: now,
                     photo: photo || undefined,
                     synced: false,
-                    notes: 'AUTOCERRADO POR SALIDA DEFINITIVA'
+                    notes: 'AUTOCERRADO POR SALIDA DEFINITIVA',
+                    kioskId: syncService.getKioskId()
                 });
                 finalNotes = 'AVISO: EL USUARIO NO MARCÓ SALIDA DESCANSO. CIERRE AUTOMÁTICO.';
             } else {
@@ -138,7 +140,8 @@ export function AttendanceSelection({ user, photo, onComplete }: AttendanceSelec
                 timestamp: now,
                 photo: photo || undefined,
                 synced: false,
-                notes: finalNotes
+                notes: finalNotes,
+                kioskId: syncService.getKioskId()
             });
             onComplete(type);
         } catch (err) {
