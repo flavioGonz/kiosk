@@ -59,12 +59,23 @@ export function SyncSettings() {
 
     // PWA Install prompt
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [serverOnline, setServerOnline] = useState(false);
 
     useEffect(() => {
         const config = syncService.getConfig();
         setServerUrl(config.serverUrl);
         setApiKey(config.apiKey);
         setEnabled(config.enabled);
+
+        // Check server status
+        const checkServer = async () => {
+            if (config.serverUrl) {
+                const res = await syncService.testConnection();
+                setServerOnline(res.success);
+            }
+        };
+        checkServer();
+        const interval = setInterval(checkServer, 10000);
 
         // Load DB config
         const savedDb = localStorage.getItem('dbConfig');
@@ -90,7 +101,10 @@ export function SyncSettings() {
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            clearInterval(interval);
+        };
     }, []);
 
     const handleSaveConfig = () => {
@@ -219,6 +233,36 @@ export function SyncSettings() {
                                 <button onClick={handleSaveConfig} className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg transition-all active:scale-95">
                                     <Check className="w-4 h-4" />
                                     Aplicar Cambios
+                                </button>
+                            </div>
+
+                            {/* EXPLICIT POSTGRES BLOCK */}
+                            <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Database className="w-5 h-5 text-blue-600" />
+                                        <h4 className="text-sm font-black uppercase tracking-tight text-blue-900">PostgreSQL Central</h4>
+                                    </div>
+                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${serverOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {serverOnline ? 'Conectado a la Nube' : 'Sin Conexión'}
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-blue-800/60 font-medium leading-relaxed">
+                                    Use esta sección para replicar funcionarios y rostros entre múltiples terminales.
+                                    Asegúrese de que el <b>Endpoint</b> sea la IP de su PC principal (ej: <code>http://192.168.1.10:3001</code>) si accede desde una tablet.
+                                </p>
+                                <button
+                                    onClick={async () => {
+                                        setSyncing(true);
+                                        await syncService.fullSync();
+                                        setSyncing(false);
+                                        alert('Sincronización terminada. Los funcionarios actuales han sido actualizados.');
+                                    }}
+                                    disabled={syncing || !enabled}
+                                    className="w-full py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                                >
+                                    {syncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                                    Sincronizar Datos Ahora
                                 </button>
                             </div>
                         </motion.div>

@@ -157,6 +157,14 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                 });
             }
             await refreshFaceMatcher();
+
+            // PROACTIVE SYNC: Push new/updated user to central DB immediately
+            try {
+                await syncService.fullSync();
+            } catch (e) {
+                console.error('Proactive sync failed:', e);
+            }
+
             onComplete();
         } catch (err) {
             setError('Error al guardar. El DNI podría estar ya registrado.');

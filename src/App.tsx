@@ -17,7 +17,7 @@ import { ProcessingSplash } from './components/ProcessingSplash'
 type ViewState = 'home' | 'scanner' | 'confirm' | 'selection' | 'printer' | 'history'
 
 function Kiosk() {
-  const [view, setView] = useState<ViewState>('scanner')
+  const [view, setView] = useState<ViewState>('landing')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [currentPhoto, setCurrentPhoto] = useState<string | null>(null)
   const [attendanceType, setAttendanceType] = useState<string | null>(null)
@@ -56,26 +56,68 @@ function Kiosk() {
   })
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 sm:p-12 pb-32 relative overflow-hidden bg-white">
-      <div className="gradient-bg opacity-30" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 sm:p-12 pb-32 relative overflow-hidden bg-slate-50">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-400/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Admin Secret Link (top-right, invisible) */}
       <Link
         to="/admin"
-        className="fixed top-6 right-6 p-4 rounded-full text-black/5 hover:text-black/10 transition-all z-50 group"
+        className="fixed top-6 right-6 p-4 rounded-full text-slate-200 hover:text-slate-300 transition-all z-50 group"
       >
         <ShieldAlert className="w-6 h-6" />
       </Link>
 
       <main className="flex-1 w-full max-w-4xl flex flex-col items-center justify-center gap-12 no-print relative z-10">
         <AnimatePresence mode="wait">
+          {view === 'landing' && (
+            <motion.div
+              key="landing"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col items-center text-center space-y-12"
+            >
+              <div className="relative group">
+                <div className="absolute inset-0 bg-blue-500/10 rounded-[3rem] blur-2xl group-hover:bg-blue-500/20 transition-all" />
+                <div className="relative w-80 h-[400px] rounded-[3rem] border-[12px] border-white shadow-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                  <div className="flex flex-col items-center space-y-4 opacity-20">
+                    <div className="w-24 h-24 border-4 border-slate-400 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-slate-400 rounded-full" />
+                    </div>
+                    <div className="w-32 h-4 bg-slate-400 rounded-full" />
+                    <div className="w-24 h-4 bg-slate-400 rounded-full" />
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setView('scanner')}
+                  className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-10 py-5 bg-blue-600 text-white rounded-2xl shadow-2xl shadow-blue-600/40 flex items-center gap-3 active:bg-blue-700 transition-all border-4 border-white"
+                >
+                  <Clock className="w-6 h-6" />
+                  <span className="text-sm font-black uppercase tracking-widest italic">Registrar Marca</span>
+                </motion.button>
+              </div>
+
+              <div className="space-y-3">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Control de Asistencia</h1>
+                <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">Identificación Biométrica Facial</p>
+              </div>
+            </motion.div>
+          )}
+
           {view === 'scanner' && (
             <motion.div
               key="scanner"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="w-full flex justify-center"
+              className="w-full flex flex-col items-center gap-8"
             >
               <AttendanceScanner
                 onMatch={(user, photo) => {
@@ -88,6 +130,12 @@ function Kiosk() {
                   setTimeout(() => setShowUnknownFace(false), 4000)
                 }}
               />
+              <button
+                onClick={() => setView('landing')}
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Volver al inicio
+              </button>
             </motion.div>
           )}
 
