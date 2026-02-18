@@ -18,6 +18,16 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
     const [lastMatchId, setLastMatchId] = useState<number | null>(null);
     const [lastUnknownTime, setLastUnknownTime] = useState<number>(0);
 
+    // Audio effects
+    const successAudio = useRef(new Audio('/sounds/success.mp3'));
+    const errorAudio = useRef(new Audio('/sounds/error.mp3'));
+
+    const playSound = (type: 'success' | 'error') => {
+        const audio = type === 'success' ? successAudio.current : errorAudio.current;
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log('Audio playback blocked by browser/user interaction'));
+    };
+
     const processFrame = useCallback(async () => {
         if (isProcessing || !modelsLoaded || !webcamRef.current) return;
 
@@ -41,6 +51,7 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
 
                         if (user && userId !== lastMatchId) {
                             const photo = webcamRef.current.getScreenshot() || '';
+                            playSound('success'); // Play success sound
                             setLastMatchId(userId);
                             onMatch(user, photo);
 
@@ -54,6 +65,7 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
                         // Unknown face detected
                         const now = Date.now();
                         if (now - lastUnknownTime > 5000) { // 5 second cooldown
+                            playSound('error'); // Play error sound
                             setLastUnknownTime(now);
                             const imageSrc = webcamRef.current.getScreenshot();
                             await db.unknownFaces.add({
