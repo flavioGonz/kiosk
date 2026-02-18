@@ -42,8 +42,8 @@ export function SyncSettings() {
     const [enabled, setEnabled] = useState(false);
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-    const [syncResult, setSyncResult] = useState<{ success: boolean; synced: number; errors: number } | null>(null);
+    const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number } | null>(null);
+    const [showSyncModal, setShowSyncModal] = useState(false);
 
     // Database config
     const [dbType, setDbType] = useState<DbType>('none');
@@ -111,7 +111,12 @@ export function SyncSettings() {
         syncService.updateConfig({ serverUrl, apiKey, enabled });
         localStorage.setItem('dbConfig', JSON.stringify({ type: dbType, host: dbHost, port: dbPort, name: dbName, user: dbUser, password: dbPassword }));
         localStorage.setItem('tableMappings', JSON.stringify(tables));
-        alert('Configuración guardada correctamente');
+    };
+
+    const handleToggleEnabled = () => {
+        const nextState = !enabled;
+        setEnabled(nextState);
+        syncService.updateConfig({ serverUrl, apiKey, enabled: nextState });
     };
 
     const handleTestConnection = async () => {
@@ -125,10 +130,16 @@ export function SyncSettings() {
 
     const handleManualSync = async () => {
         setSyncing(true);
+        setShowSyncModal(true);
         setSyncResult(null);
-        const result = await syncService.manualSync();
-        setSyncResult(result);
-        setSyncing(false);
+        try {
+            const result = await syncService.fullSync();
+            setSyncResult(result);
+        } catch (e) {
+            setSyncResult({ success: false, downloaded: 0, uploaded: 0 });
+        } finally {
+            setSyncing(false);
+        }
     };
 
     const handleSubscribe = async () => {
@@ -220,7 +231,7 @@ export function SyncSettings() {
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sincronización en tiempo real cada 180s</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setEnabled(!enabled)} className={`relative w-14 h-8 rounded-full transition-all duration-300 ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                <button onClick={handleToggleEnabled} className={`relative w-14 h-8 rounded-full transition-all duration-300 ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                                     <motion.div animate={{ x: enabled ? 26 : 4 }} className="absolute top-1 w-6 h-6 bg-white rounded-full shadow-md" />
                                 </button>
                             </div>
@@ -252,12 +263,7 @@ export function SyncSettings() {
                                     Asegúrese de que el <b>Endpoint</b> sea la IP de su PC principal (ej: <code>http://192.168.1.10:3001</code>) si accede desde una tablet.
                                 </p>
                                 <button
-                                    onClick={async () => {
-                                        setSyncing(true);
-                                        await syncService.fullSync();
-                                        setSyncing(false);
-                                        alert('Sincronización terminada. Los funcionarios actuales han sido actualizados.');
-                                    }}
+                                    onClick={handleManualSync}
                                     disabled={syncing || !enabled}
                                     className="w-full py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
                                 >
@@ -265,6 +271,56 @@ export function SyncSettings() {
                                     Sincronizar Datos Ahora
                                 </button>
                             </div>
+
+                            {/* Sync Status Popup Modal */}
+                            <AnimatePresence>
+                                {showSyncModal && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+                                        >
+                                            <div className={`p-8 flex flex-col items-center text-center ${syncing ? 'bg-white' : syncResult?.success ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 ${syncing ? 'bg-blue-600 shadow-blue-500/20' : syncResult?.success ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500'
+                                                    } shadow-xl`}>
+                                                    {syncing ? <RefreshCw className="w-10 h-10 text-white animate-spin" /> : syncResult?.success ? <Check className="w-10 h-10 text-white" /> : <X className="w-10 h-10 text-white" />}
+                                                </div>
+
+                                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic mb-2">
+                                                    {syncing ? 'Sincronizando...' : syncResult?.success ? '¡Sincronización Exitosa!' : 'Error de Conexión'}
+                                                </h3>
+                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-8">
+                                                    {syncing ? 'Transferiendo datos biométricos' : 'Proceso finalizado correctamente'}
+                                                </p>
+
+                                                {syncResult && (
+                                                    <div className="grid grid-cols-2 gap-4 w-full mb-8">
+                                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Descargados</p>
+                                                            <p className="text-2xl font-black text-blue-600 leading-none">{syncResult.downloaded}</p>
+                                                        </div>
+                                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Subidos</p>
+                                                            <p className="text-2xl font-black text-indigo-600 leading-none">{syncResult.uploaded}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {!syncing && (
+                                                    <button
+                                                        onClick={() => setShowSyncModal(false)}
+                                                        className="w-full py-4 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all"
+                                                    >
+                                                        Cerrar Ventana
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    </div>
+                                )}
+                            </AnimatePresence>
                         </motion.div>
                     )}
 
