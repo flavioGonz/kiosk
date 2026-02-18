@@ -16,16 +16,16 @@ import {
     Lock,
     UserCircle,
     ChevronDown,
-    ShieldAlert,
-    Settings,
     Activity,
-    AlertTriangle
+    AlertTriangle,
+    Smartphone
 } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';
 import { LiveMonitor } from './LiveMonitor';
 import { AttendanceRecords } from './AttendanceRecords';
 import { SyncSettings } from './SyncSettings';
 import { UnknownFaces } from './UnknownFaces';
+import { DevicesManager } from './DevicesManager';
 import { Modal } from './Modal';
 
 interface AdminPanelProps {
@@ -35,7 +35,7 @@ interface AdminPanelProps {
 export function AdminPanel({ onBack }: AdminPanelProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [showEnrollment, setShowEnrollment] = useState(false);
-    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown'>('records');
+    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown' | 'devices'>('records');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -135,6 +135,13 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                             active={activeTab === 'settings'}
                             collapsed={isSidebarCollapsed}
                             onClick={() => setActiveTab('settings')}
+                        />
+                        <SidebarLink
+                            icon={<Smartphone />}
+                            label="Dispositivos"
+                            active={activeTab === 'devices'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('devices')}
                         />
                     </div>
                 </nav>
@@ -331,6 +338,12 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                         {activeTab === 'settings' && (
                             <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                                 <SyncSettings />
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'devices' && (
+                            <motion.div key="devices" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                                <DevicesManager />
                             </motion.div>
                         )}
                     </AnimatePresence>

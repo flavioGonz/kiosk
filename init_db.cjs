@@ -85,18 +85,21 @@ async function init() {
         `);
         console.log('Table "unknown_faces" checked/created');
 
-        // Table: Push Subscriptions
+        // Table: Devices (Moderation)
         await dbClient.query(`
-            CREATE TABLE IF NOT EXISTS push_subscriptions (
+            CREATE TABLE IF NOT EXISTS devices (
                 id SERIAL PRIMARY KEY,
-                employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
-                subscription_data JSONB NOT NULL,
+                kiosk_id VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'approved', 'blocked'
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('Table "push_subscriptions" checked/created');
+        console.log('Table "devices" checked/created');
 
         await dbClient.end();
+        console.log('Database initialization complete');
 
     } catch (err) {
         console.error('Initialization error:', err);

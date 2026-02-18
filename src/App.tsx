@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ShieldAlert, Clock, Calendar } from 'lucide-react'
+import { ShieldAlert, Clock, Calendar, Smartphone, Lock as LockIcon, CheckCircle, RefreshCcw, ShieldX } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
 import { AttendanceScanner } from './components/AttendanceScanner'
@@ -14,7 +14,7 @@ import { type User } from './db'
 import { syncService } from './services/syncService'
 import { ProcessingSplash } from './components/ProcessingSplash'
 
-type ViewState = 'home' | 'scanner' | 'confirm' | 'selection' | 'printer' | 'history'
+type ViewState = 'home' | 'scanner' | 'confirm' | 'selection' | 'printer' | 'history' | 'landing'
 
 function Kiosk() {
   const [view, setView] = useState<ViewState>('landing')
@@ -25,6 +25,7 @@ function Kiosk() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showUnknownFace, setShowUnknownFace] = useState(false)
   const [serverOnline, setServerOnline] = useState(false)
+  const [deviceStatus, setDeviceStatus] = useState<'approved' | 'pending' | 'blocked' | 'unregistered'>('approved')
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -35,18 +36,26 @@ function Kiosk() {
     // Initialize sync service
     syncService.init()
 
-    // Check server connection periodically
-    const checkServer = async () => {
+    // Check server connection and device moderation
+    const checkServerAndDevice = async () => {
       const config = syncService.getConfig()
       if (config.serverUrl && config.enabled) {
         const result = await syncService.testConnection()
         setServerOnline(result.success)
+
+        if (result.success) {
+          // Heartbeat and Status Check
+          await syncService.heartBeat();
+          const status = await syncService.checkDeviceStatus();
+          setDeviceStatus(status);
+        }
       } else {
         setServerOnline(false)
+        setDeviceStatus('approved') // Allow local use if cloud off
       }
     }
-    checkServer()
-    const serverCheck = setInterval(checkServer, 30000)
+    checkServerAndDevice()
+    const serverCheck = setInterval(checkServerAndDevice, 20000)
     return () => clearInterval(serverCheck)
   }, [])
 
@@ -57,6 +66,36 @@ function Kiosk() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 sm:p-12 pb-32 relative overflow-hidden bg-slate-50">
+      <AnimatePresence>
+        {deviceStatus !== 'approved' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-12 text-center"
+          >
+            <div className={`w-36 h-36 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl ${deviceStatus === 'blocked' ? 'bg-rose-100 text-rose-600 shadow-rose-200/50' : 'bg-amber-100 text-amber-600 shadow-amber-200/50'}`}>
+              {deviceStatus === 'blocked' ? <ShieldX size={64} strokeWidth={2.5} /> : <Smartphone size={64} strokeWidth={2.5} className="animate-pulse" />}
+            </div>
+
+            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter italic mb-6 leading-tight whitespace-pre-line">
+              {deviceStatus === 'blocked' ? 'Terminal\nBloqueado' : 'Esperando\nAdopción'}
+            </h2>
+
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[11px] max-w-[280px] mx-auto leading-relaxed mb-16 opacity-60">
+              {deviceStatus === 'blocked'
+                ? 'Este terminal ha sido restringido por seguridad. Solicite desbloqueo al administrador.'
+                : 'Este dispositivo es nuevo. El administrador central debe habilitarlo antes de operar.'}
+            </p>
+
+            <div className="flex flex-col items-center gap-3 py-6 px-10 bg-slate-50 rounded-3xl border border-slate-100">
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Identificador Único</span>
+              <span className="text-xs font-mono font-bold text-slate-400 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">{syncService.getKioskId()}</span>
+              {deviceStatus === 'pending' && <span className="flex items-center gap-2 mt-2 text-[10px] font-black text-amber-500 uppercase tracking-widest"><RefreshCcw className="w-3 h-3 animate-spin" /> Verificando autorización...</span>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-400/5 rounded-full blur-[100px] pointer-events-none" />

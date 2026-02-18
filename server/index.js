@@ -50,6 +50,57 @@ app.post('/api/subscribe', async (req, res) => {
     }
 });
 
+// --- DEVICES (MODERATION) ---
+
+app.get('/api/devices', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM devices ORDER BY last_seen DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch devices' });
+    }
+});
+
+app.post('/api/devices/register', async (req, res) => {
+    const { kioskId, name } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO devices (kiosk_id, name, last_seen)
+             VALUES ($1, $2, CURRENT_TIMESTAMP)
+             ON CONFLICT (kiosk_id) DO UPDATE SET
+                last_seen = CURRENT_TIMESTAMP,
+                name = COALESCE($2, devices.name)
+             RETURNING *`,
+            [kioskId, name]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to register device' });
+    }
+});
+
+app.get('/api/devices/check/:kioskId', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT status FROM devices WHERE kiosk_id = $1', [req.params.kioskId]);
+        if (result.rowCount === 0) {
+            return res.json({ status: 'unregistered' });
+        }
+        res.json({ status: result.rows[0].status });
+    } catch (err) {
+        res.status(500).json({ error: 'Check failed' });
+    }
+});
+
+app.put('/api/devices/:id/status', async (req, res) => {
+    const { status } = req.body;
+    try {
+        await pool.query('UPDATE devices SET status = $1 WHERE id = $2', [status, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
 // Helper to notify
 async function sendNotificationToEmployee(userDni, payload) {
     try {

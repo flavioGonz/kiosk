@@ -65,6 +65,48 @@ class SyncService {
     async fullSync() {
         await this.syncPendingRecords();
         await this.syncEmployees();
+        await this.heartBeat();
+    }
+
+    async heartBeat() {
+        if (!this.config.enabled || !this.config.serverUrl) return;
+        try {
+            await fetch(`${this.config.serverUrl}/api/devices/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    kioskId: this.getKioskId(),
+                    name: `Terminal ${this.getKioskId().split('-').pop()}`
+                })
+            });
+        } catch (e) {
+            console.error('[Sync] Heartbeat failed:', e);
+        }
+    }
+
+    async checkDeviceStatus(): Promise<'approved' | 'pending' | 'blocked' | 'unregistered'> {
+        if (!this.config.enabled || !this.config.serverUrl) return 'approved'; // Allow if cloud is off
+        try {
+            const res = await fetch(`${this.config.serverUrl}/api/devices/check/${this.getKioskId()}`);
+            const data = await res.json();
+            return data.status;
+        } catch (e) {
+            return 'approved'; // Fail open if server is down? Or 'unregistered'?
+        }
+    }
+
+    async getDevices() {
+        if (!this.config.serverUrl) return [];
+        const res = await fetch(`${this.config.serverUrl}/api/devices`);
+        return await res.json();
+    }
+
+    async updateDeviceStatus(id: number, status: string) {
+        await fetch(`${this.config.serverUrl}/api/devices/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
     }
 
     async manualSync(): Promise<{ success: boolean; synced: number; errors: number }> {
