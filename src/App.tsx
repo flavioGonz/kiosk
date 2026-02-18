@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ShieldAlert, Clock, Calendar, Smartphone, Lock as LockIcon, CheckCircle, RefreshCcw, ShieldX } from 'lucide-react'
+import { ShieldAlert, Clock, Calendar, Smartphone, RefreshCw, ShieldX } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
 import { AttendanceScanner } from './components/AttendanceScanner'
@@ -91,7 +91,7 @@ function Kiosk() {
             <div className="flex flex-col items-center gap-3 py-6 px-10 bg-slate-50 rounded-3xl border border-slate-100">
               <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Identificador Único</span>
               <span className="text-xs font-mono font-bold text-slate-400 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">{syncService.getKioskId()}</span>
-              {deviceStatus === 'pending' && <span className="flex items-center gap-2 mt-2 text-[10px] font-black text-amber-500 uppercase tracking-widest"><RefreshCcw className="w-3 h-3 animate-spin" /> Verificando autorización...</span>}
+              {deviceStatus === 'pending' && <span className="flex items-center gap-2 mt-2 text-[10px] font-black text-amber-500 uppercase tracking-widest"><RefreshCw className="w-3 h-3 animate-spin" /> Verificando autorización...</span>}
             </div>
           </motion.div>
         )}

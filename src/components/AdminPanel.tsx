@@ -16,6 +16,8 @@ import {
     Lock,
     UserCircle,
     ChevronDown,
+    ShieldAlert,
+    Settings,
     Activity,
     AlertTriangle,
     Smartphone

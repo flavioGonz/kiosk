@@ -125,34 +125,57 @@ class SyncService {
                 headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
             });
 
+            let downloadedCount = 0;
             if (response.ok) {
                 const cloudEmployees = await response.json();
                 for (const emp of cloudEmployees) {
-                    // Update local DB with cloud data
                     const localEmp = await db.users.where('dni').equals(emp.dni).first();
-                    if (!localEmp || JSON.stringify(localEmp.faceDescriptors) !== emp.face_descriptors) {
+
+                    // Parse descriptors from cloud (they come as plain objects/arrays)
+                    let cloudDescriptorsRaw = typeof emp.face_descriptors === 'string' ? JSON.parse(emp.face_descriptors) : emp.face_descriptors;
+
+                    // HYDRATION: Convert numeric-indexed objects or plain arrays to Float32Array
+                    let hydratedDescriptors: Float32Array[] = [];
+                    if (Array.isArray(cloudDescriptorsRaw)) {
+                        hydratedDescriptors = cloudDescriptorsRaw.map((d: any) => {
+                            if (d instanceof Float32Array) return d;
+                            // Convert from array or numeric-keyed object
+                            const values = Array.isArray(d) ? d : Object.values(d);
+                            return new Float32Array(values as number[]);
+                        });
+                    }
+
+                    // Check if update is needed
+                    const localDescriptorsStr = localEmp ? JSON.stringify(localEmp.faceDescriptors) : null;
+                    const cloudDescriptorsStr = JSON.stringify(hydratedDescriptors);
+
+                    if (!localEmp || localDescriptorsStr !== cloudDescriptorsStr) {
                         await db.users.put({
-                            id: localEmp?.id, // Keep local ID if exists
+                            id: localEmp?.id,
                             name: emp.name,
                             dni: emp.dni,
                             email: emp.email,
                             phone: emp.phone,
                             whatsapp: emp.whatsapp,
                             pin: emp.pin,
-                            faceDescriptors: typeof emp.face_descriptors === 'string' ? JSON.parse(emp.face_descriptors) : emp.face_descriptors,
+                            faceDescriptors: hydratedDescriptors,
                             photos: emp.photos || [],
                             falsePositives: emp.false_positives || 0,
-                            created_at: emp.created_at
+                            createdAt: emp.created_at || Date.now()
                         });
+                        downloadedCount++;
                     }
                 }
-                console.log(`[Sync] Downloaded ${cloudEmployees.length} employees`);
+                console.log(`[Sync] Downloaded/Updated ${downloadedCount} employees from cloud`);
             }
 
-            // 2. UPLOAD LOCAL NEW ONES (Simple logic: upload all to ensure sync)
+            // 2. UPLOAD LOCAL CHANGES
             const localUsers = await db.users.toArray();
+            let uploadedCount = 0;
             for (const user of localUsers) {
-                await fetch(`${this.config.serverUrl}/api/employees`, {
+                const descriptorsToUpload = user.faceDescriptors.map(d => Array.from(d));
+
+                const upRes = await fetch(`${this.config.serverUrl}/api/employees`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -165,13 +188,14 @@ class SyncService {
                         phone: user.phone,
                         whatsapp: user.whatsapp,
                         pin: user.pin,
-                        face_descriptors: user.faceDescriptors,
+                        face_descriptors: descriptorsToUpload,
                         photos: user.photos
                     })
                 });
+                if (upRes.ok) uploadedCount++;
             }
 
-            return { success: true, downloaded: 0, uploaded: localUsers.length };
+            return { success: true, downloaded: downloadedCount, uploaded: uploadedCount };
         } catch (err) {
             console.error('[Sync] Employee sync error:', err);
             return { success: false, downloaded: 0, uploaded: 0 };
