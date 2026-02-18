@@ -1,0 +1,9 @@
+ID,Funcionario,DNI,Marca,Tipo,Fecha,Hora,Sync
+8,flavio2,321321321,1,Entrada,18/2/2026,9:23:00,N
+7,Flavio,42162858,1,Entrada,18/2/2026,9:13:38,N
+6,Flavio,42162858,2,Salida,18/2/2026,9:03:18,N
+5,Flavio,42162858,-,Entrada,18/2/2026,8:57:19,N
+4,Flavio,42162858,-,Salida,18/2/2026,8:52:29,N
+3,Flavio,N/A,-,Entrada,18/2/2026,8:39:02,N
+2,Flavio,N/A,-,Entrada Descanso,17/2/2026,18:47:01,N
+1,Flavio,N/A,-,Entrada,17/2/2026,18:39:29,N

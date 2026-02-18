@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --anep-blue: #005596;
+  --anep-blue-dark: #003d6b;
+  --anep-blue-light: #0072c1;
+  --anep-gold: #ffcc00;
+
+  /* Light theme only */
+  --bg-color: #ffffff;
+  --text-color: #0f172a;
+  --panel-bg: #ffffff;
+  --sidebar-bg: #f8fafc;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+}
+
+@layer base {
+  body {
+    @apply antialiased overflow-hidden;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer components {
+  .gradient-bg {
+    background: radial-gradient(circle at top left, #e0f2fe 0%, #f1f5f9 50%, #e2e8f0 100%);
+    @apply fixed inset-0 -z-10;
+  }
+
+  .glass {
+    @apply backdrop-blur-xl shadow-2xl;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  .glass-dark {
+    @apply bg-white/80 backdrop-blur-xl border border-gray-200 shadow-2xl;
+  }
+
+  .glass-card {
+    @apply glass rounded-3xl transition-all duration-300;
+  }
+
+  .glass-button {
+    @apply glass px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all duration-300 active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+}
+
+@keyframes scan {
+  from {
+    top: 0;
+  }
+
+  to {
+    top: 100%;
+  }
+}
+
+.animate-scan {
+  animation: scan 3s ease-in-out infinite;
+}
+
+/* Custom scrollbar for logs */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
