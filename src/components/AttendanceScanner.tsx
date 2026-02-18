@@ -17,6 +17,7 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
     const [confidence, setConfidence] = useState<number | null>(null);
     const [lastMatchId, setLastMatchId] = useState<number | null>(null);
     const [lastUnknownTime, setLastUnknownTime] = useState<number>(0);
+    const [unknownCounter, setUnknownCounter] = useState<number>(0);
 
     // Audio effects
     const successAudio = useRef(new Audio('/accesocorrecto.mp3'));
@@ -51,29 +52,35 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
 
                         if (user && userId !== lastMatchId) {
                             const photo = webcamRef.current.getScreenshot() || '';
-                            playSound('success'); // Play success sound
+                            playSound('success');
                             setLastMatchId(userId);
+                            setUnknownCounter(0); // Reset on match
                             onMatch(user, photo);
 
-                            // Cool-down to prevent multiple triggers
                             setTimeout(() => {
                                 setLastMatchId(null);
                                 setConfidence(null);
                             }, 5000);
                         }
                     } else if (match.label === 'unknown' || match.distance >= 0.5) {
-                        // Unknown face detected
-                        const now = Date.now();
-                        if (now - lastUnknownTime > 5000) { // 5 second cooldown
-                            playSound('error'); // Play error sound
-                            setLastUnknownTime(now);
-                            const imageSrc = webcamRef.current.getScreenshot();
-                            await db.unknownFaces.add({
-                                timestamp: now,
-                                photo: imageSrc || undefined,
-                                synced: false
-                            });
-                            onUnknownFace();
+                        // Incremental logic to avoid false "Unknown" alerts
+                        setUnknownCounter(prev => prev + 1);
+
+                        // Only trigger unknown if we failed 3 times in a row
+                        if (unknownCounter >= 3) {
+                            const now = Date.now();
+                            if (now - lastUnknownTime > 10000) { // 10s cooldown for splash
+                                playSound('error');
+                                setLastUnknownTime(now);
+                                setUnknownCounter(0);
+                                const imageSrc = webcamRef.current.getScreenshot();
+                                await db.unknownFaces.add({
+                                    timestamp: now,
+                                    photo: imageSrc || undefined,
+                                    synced: false
+                                });
+                                onUnknownFace();
+                            }
                         }
                     }
                 }
@@ -88,7 +95,7 @@ export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerP
     }, [detectFace, isProcessing, lastMatchId, lastUnknownTime, matchFace, modelsLoaded, onMatch, onUnknownFace]);
 
     useEffect(() => {
-        const interval = setInterval(processFrame, 500); // Check every 500ms
+        const interval = setInterval(processFrame, 250); // Faster checks (4 times per second)
         return () => clearInterval(interval);
     }, [processFrame]);
 

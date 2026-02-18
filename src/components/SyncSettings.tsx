@@ -38,7 +38,7 @@ const DEFAULT_TABLES: TableMapping[] = [
 export function SyncSettings() {
     const [activeSection, setActiveSection] = useState<SettingsSection>('sync');
     const [serverUrl, setServerUrl] = useState('');
-    const [apiKey, setApiKey] = useState('');
+    const [apiKey, setApiKey] = useState('anep-biometric-2026');
     const [enabled, setEnabled] = useState(false);
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -207,7 +207,7 @@ export function SyncSettings() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputField label="Endpoint de API" type="text" value={serverUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServerUrl(e.target.value)} placeholder="https://cloud.anep.edu.uy/api" />
-                                <InputField label="Clave de Acceso (Secret)" type="password" value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="••••••••••••••••" />
+                                <InputField label="Clave de Acceso (Secret)" type="password" value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="anep-biometric-2026" />
                             </div>
 
                             <div className={`p-6 rounded-xl border flex items-center justify-between transition-all ${enabled ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>

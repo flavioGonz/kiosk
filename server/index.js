@@ -1,3 +1,7 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const { Pool } = require('pg');
 const webpush = require('web-push');
 
 const vapidKeys = {
@@ -13,6 +17,14 @@ webpush.setVapidDetails(
 
 const app = express();
 const port = 3001;
+const DEFAULT_API_KEY = 'anep-biometric-2026';
+
+// Auth
+const auth = (req, res, next) => {
+    const key = req.headers.authorization?.split(' ')[1];
+    if (key && key !== DEFAULT_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    next();
+};
 
 // Database connection pool
 const pool = new Pool({
@@ -25,6 +37,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use(auth);
 
 // Health Check
 app.get('/api/health', (req, res) => {
