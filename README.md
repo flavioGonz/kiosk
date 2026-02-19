@@ -8,6 +8,8 @@
 
 Sistema de terminal biométrica inteligente para el control de asistencia institucional. Diseñado para ofrecer una experiencia de usuario premium, alta precisión en el reconocimiento facial y sincronización en tiempo real con la nube.
 
+<img width="678" height="805" alt="image" src="https://github.com/user-attachments/assets/5b794b4a-00a6-4be6-9935-680af328e76b" />
+
 ---
 
 ## ✨ Características Principales
