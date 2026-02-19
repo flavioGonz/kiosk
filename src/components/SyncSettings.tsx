@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone } from 'lucide-react';
+import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertTriangle } from 'lucide-react';
 import { syncService } from '../services/syncService';
 import { subscribeUser } from '../services/notificationService';
 
