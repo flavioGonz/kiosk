@@ -132,10 +132,10 @@ export function EnrollmentSplash({ onClose }: EnrollmentSplashProps) {
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-scan" />
             </div>
 
-            {step !== 'saving' && step !== 'success' && (
+            {(step === 'login' || step === 'welcome') && (
                 <button
                     onClick={onClose}
-                    className="absolute top-8 right-8 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
+                    className="absolute top-8 right-8 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95 z-50"
                 >
                     <X className="w-6 h-6" />
                 </button>
@@ -257,8 +257,17 @@ export function EnrollmentSplash({ onClose }: EnrollmentSplashProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 1.1 }}
-                        className="w-full max-w-4xl bg-white rounded-[3rem] p-8 shadow-2xl flex flex-col md:flex-row gap-8"
+                        className="w-full max-w-4xl bg-white rounded-[3rem] p-8 shadow-2xl flex flex-col md:flex-row gap-8 relative"
                     >
+                        {/* Internal Back for Capture Step */}
+                        <button
+                            onClick={() => setStep('data')}
+                            className="absolute top-8 right-8 p-3 text-slate-300 hover:text-rose-500 transition-colors z-10"
+                            title="Volver a los datos"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
                         <div className="flex-1 space-y-6">
                             <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl border-8 border-slate-50">
                                 <Webcam
@@ -320,21 +329,6 @@ export function EnrollmentSplash({ onClose }: EnrollmentSplashProps) {
                                         Finalizar Registro
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => {
-                                        setCapturedPhotos([]);
-                                        setCapturedDescriptors([]);
-                                    }}
-                                    className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[9px]"
-                                >
-                                    Reiniciar Fotos
-                                </button>
-                                <button
-                                    onClick={() => setStep('data')}
-                                    className="w-full py-4 text-slate-300 font-black uppercase tracking-widest text-[9px]"
-                                >
-                                    Volver a Datos
-                                </button>
                             </div>
                         </div>
                     </motion.div>
