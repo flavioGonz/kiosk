@@ -19,7 +19,7 @@ import {
     ShieldAlert,
     Settings,
     Activity,
-    AlertTriangle,
+    AlertCircle,
     Smartphone
 } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';

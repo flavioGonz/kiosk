@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Check, X, AlertTriangle, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { User as UserIcon, Check, X, AlertCircle, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { db, type User } from '../db';
 
 interface IdentityConfirmationProps {
@@ -146,7 +146,7 @@ export function IdentityConfirmation({ user, capturedPhoto, onConfirm, onReject 
                                 className="w-full max-w-sm bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 text-center space-y-2"
                             >
                                 <div className="flex items-center justify-center gap-2 text-amber-700">
-                                    <AlertTriangle className="w-5 h-5" />
+                                    <AlertCircle className="w-5 h-5" />
                                     <span className="text-xs font-black uppercase tracking-wider">Atención</span>
                                 </div>
                                 <p className="text-xs text-amber-800 leading-relaxed">
@@ -171,7 +171,7 @@ export function IdentityConfirmation({ user, capturedPhoto, onConfirm, onReject 
                                     onClick={handleReportFalsePositive}
                                     className="flex-[1.5] flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-amber-500 text-white font-bold text-sm shadow-lg shadow-amber-500/20 transition-all active:scale-95"
                                 >
-                                    <AlertTriangle className="w-4 h-4" />
+                                    <AlertCircle className="w-4 h-4" />
                                     Reportar Error
                                 </button>
                             </motion.div>

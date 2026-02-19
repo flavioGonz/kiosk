@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertTriangle } from 'lucide-react';
+import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertCircle } from 'lucide-react';
 import { syncService } from '../services/syncService';
 import { subscribeUser } from '../services/notificationService';
 
@@ -227,7 +227,7 @@ export function SyncSettings() {
                                 <InputField label="Endpoint de API" type="text" value={serverUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServerUrl(e.target.value)} placeholder="https://cloud.anep.edu.uy/api" />
                                 {serverUrl.includes('localhost') && (
                                     <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tight ml-4 flex items-center gap-1">
-                                        <AlertTriangle size={10} /> Advertencia: 'localhost' solo funciona en este PC. Usa la IP del servidor para totems remotos.
+                                        <AlertCircle size={10} /> Advertencia: 'localhost' solo funciona en este PC. Usa la IP del servidor para totems remotos.
                                     </p>
                                 )}
                                 <InputField label="Clave de Acceso (Secret)" type="password" value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="flavio20" />
