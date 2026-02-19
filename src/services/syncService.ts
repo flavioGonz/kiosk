@@ -15,20 +15,27 @@ class SyncService {
 
     private syncInterval: number | null = null;
 
-    async init() {
+    init() {
         const savedConfig = localStorage.getItem('syncConfig');
         if (savedConfig) {
-            this.config = JSON.parse(savedConfig);
+            try {
+                this.config = JSON.parse(savedConfig);
+                console.log('[Sync] Config loaded from storage:', this.config);
+            } catch (e) {
+                console.error('[Sync] Error parsing config:', e);
+            }
         }
 
         if (this.config.enabled && this.config.serverUrl) {
             this.startAutoSync();
         }
+        return this;
     }
 
     updateConfig(config: Partial<SyncConfig>) {
         this.config = { ...this.config, ...config };
         localStorage.setItem('syncConfig', JSON.stringify(this.config));
+        console.log('[Sync] Config updated:', this.config);
 
         if (this.config.enabled && this.config.serverUrl) {
             this.startAutoSync();
@@ -291,6 +298,8 @@ class SyncService {
     async testConnection(): Promise<{ success: boolean; message: string }> {
         if (!this.config.serverUrl) return { success: false, message: 'No server URL configured' };
 
+        console.log(`[Sync] Testing connection to: ${this.config.serverUrl}/api/health`);
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
@@ -306,10 +315,11 @@ class SyncService {
             return { success: false, message: `Error del servidor: ${response.status}` };
         } catch (error: any) {
             clearTimeout(timeoutId);
-            if (error.name === 'AbortError') return { success: false, message: 'Tiempo de espera agotado (Timeout)' };
-            return { success: false, message: `No se pudo encontrar el servidor: ${error.message}` };
+            console.error('[Sync] Connection test failed:', error);
+            if (error.name === 'AbortError') return { success: false, message: 'Tiempo de espera agotado (Timeout). Verifique IP/Red.' };
+            return { success: false, message: `Error de red: ${error.message}. ¿URL accesible?` };
         }
     }
 }
 
-export const syncService = new SyncService();
+export const syncService = new SyncService().init();

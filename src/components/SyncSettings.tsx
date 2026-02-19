@@ -225,7 +225,12 @@ export function SyncSettings() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputField label="Endpoint de API" type="text" value={serverUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServerUrl(e.target.value)} placeholder="https://cloud.anep.edu.uy/api" />
-                                <InputField label="Clave de Acceso (Secret)" type="password" value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="anep-biometric-2026" />
+                                {serverUrl.includes('localhost') && (
+                                    <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tight ml-4 flex items-center gap-1">
+                                        <AlertTriangle size={10} /> Advertencia: 'localhost' solo funciona en este PC. Usa la IP del servidor para totems remotos.
+                                    </p>
+                                )}
+                                <InputField label="Clave de Acceso (Secret)" type="password" value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="flavio20" />
                             </div>
 
                             <div className={`p-6 rounded-xl border flex items-center justify-between transition-all ${enabled ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>
