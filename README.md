@@ -1,4 +1,4 @@
-# 🛡️ ANEP Biometric Kiosk - Next Generation
+# 🛡️ BioCloud Kiosk - Next Generation
 
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg)](https://vitejs.dev/)
