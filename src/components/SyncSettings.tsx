@@ -42,7 +42,7 @@ export function SyncSettings() {
     const [enabled, setEnabled] = useState(false);
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number } | null>(null);
+    const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number } | null>(null);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [showSyncModal, setShowSyncModal] = useState(false);
 
@@ -143,7 +143,7 @@ export function SyncSettings() {
             setSyncResult(result);
         } catch (e) {
             console.error('Manual sync failed:', e);
-            setSyncResult({ success: false, downloaded: 0, uploaded: 0 });
+            setSyncResult({ success: false, downloaded: 0, uploaded: 0, marksSynced: 0 });
         } finally {
             setSyncing(false);
         }
@@ -334,11 +334,24 @@ export function SyncSettings() {
                                                         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                                                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Descargados</p>
                                                             <p className="text-2xl font-black text-blue-600 leading-none">{syncResult.downloaded}</p>
+                                                            <p className="text-[7px] text-slate-400 font-bold uppercase mt-1">Funcionarios</p>
                                                         </div>
-                                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                                                            <div className="absolute -top-1 -right-1">
+                                                                <div className="bg-indigo-500 text-white text-[6px] px-1 py-0.5 rounded-bl-lg font-black uppercase">Sync</div>
+                                                            </div>
                                                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Subidos</p>
                                                             <p className="text-2xl font-black text-indigo-600 leading-none">{syncResult.uploaded}</p>
+                                                            <p className="text-[7px] text-indigo-400 font-bold uppercase mt-1">Marcas y Fichas</p>
                                                         </div>
+                                                        {syncResult.marksSynced > 0 && (
+                                                            <div className="col-span-2 bg-emerald-50 p-2 rounded-xl flex items-center justify-center gap-2 border border-emerald-100">
+                                                                <Check className="w-3 h-3 text-emerald-500" strokeWidth={4} />
+                                                                <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">
+                                                                    {syncResult.marksSynced} marcas de asistencia sincronizadas
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 

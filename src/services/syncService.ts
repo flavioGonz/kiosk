@@ -69,7 +69,7 @@ class SyncService {
         }
     }
 
-    async fullSync(): Promise<{ success: boolean; downloaded: number; uploaded: number }> {
+    async fullSync(): Promise<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number }> {
         const recordsRes = await this.syncPendingRecords(true);
         const employeesRes = await this.syncEmployees(true);
         await this.heartBeat();
@@ -77,7 +77,8 @@ class SyncService {
         return {
             success: recordsRes.success && employeesRes.success,
             downloaded: employeesRes.downloaded,
-            uploaded: employeesRes.uploaded + recordsRes.synced
+            uploaded: employeesRes.uploaded + recordsRes.synced,
+            marksSynced: recordsRes.synced
         };
     }
 
