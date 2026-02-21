@@ -62,8 +62,8 @@ export function useFaceRecognition() {
 
         const detection = await faceapi
             .detectSingleFace(videoElement, new faceapi.TinyFaceDetectorOptions({
-                inputSize: 320,
-                scoreThreshold: 0.5
+                inputSize: 128,
+                scoreThreshold: 0.35
             }))
             .withFaceLandmarks()
             .withFaceDescriptor();

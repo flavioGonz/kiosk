@@ -5,6 +5,7 @@ import { db, type Attendance, type User as UserType } from '../db';
 import { Modal } from './Modal';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { Upload } from 'lucide-react';
 
 export function AttendanceRecords() {
     const [allAttendances, setAllAttendances] = useState<Attendance[]>([]);
@@ -34,6 +35,8 @@ export function AttendanceRecords() {
     });
 
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -111,6 +114,26 @@ export function AttendanceRecords() {
         a.userDni?.includes(searchTerm) ||
         a.userPhone?.includes(searchTerm)
     );
+
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target?.result as string);
+                if (Array.isArray(data)) {
+                    await db.attendance.bulkAdd(data);
+                    setStatus({ type: 'success', message: `${data.length} registros importados correctamente` });
+                    loadData();
+                }
+            } catch (err) {
+                setStatus({ type: 'error', message: 'Error al importar archivo. Formato no válido.' });
+            }
+        };
+        reader.readAsText(file);
+    };
 
     const getTypeColor = (type: string, modified?: boolean) => {
         if (modified) {
@@ -619,6 +642,102 @@ export function AttendanceRecords() {
                     </div>
                 </form>
             </Modal>
+
+            {/* FLOATING ACTION BUTTONS FOR MOBILE/IPHONE */}
+            <div className="lg:hidden fixed bottom-24 right-6 flex flex-col gap-4 z-[90]">
+                <AnimatePresence>
+                    {showExportMenu && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                            className="flex flex-col gap-3 mb-2"
+                        >
+                            <button
+                                onClick={() => exportPremiumExcel('xlsx')}
+                                className="w-12 h-12 bg-emerald-600 text-white rounded-full shadow-xl flex items-center justify-center"
+                            >
+                                <Download className="w-5 h-5" />
+                            </button>
+                            <label className="w-12 h-12 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center cursor-pointer">
+                                <Upload className="w-5 h-5" />
+                                <input type="file" accept=".json" onChange={handleImportFile} className="hidden" />
+                            </label>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all ${showExportMenu ? 'bg-slate-900 rotate-45' : 'bg-blue-600'}`}
+                >
+                    <Plus className="w-7 h-7 text-white" />
+                </button>
+            </div>
+
+            {/* FLOATING SEARCH BUTTON FOR MOBILE */}
+            <div className="lg:hidden fixed top-20 right-6 z-[90]">
+                <button
+                    onClick={() => setShowSearchOverlay(true)}
+                    className="w-12 h-12 bg-white border border-slate-200 text-slate-600 rounded-full shadow-lg flex items-center justify-center"
+                >
+                    <Search className="w-5 h-5" />
+                </button>
+            </div>
+
+            {/* MOBILE SEARCH OVERLAY */}
+            <AnimatePresence>
+                {showSearchOverlay && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-white p-6 flex flex-col"
+                    >
+                        <div className="flex items-center gap-4 mb-8">
+                            <button onClick={() => setShowSearchOverlay(false)} className="p-2 -ml-2">
+                                <X className="w-6 h-6 text-slate-400" />
+                            </button>
+                            <h2 className="text-xl font-black italic uppercase tracking-tighter">Buscar Registros</h2>
+                        </div>
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 w-5 h-5" />
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Nombre, DNI o Teléfono..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-blue-500/20 rounded-2xl text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                            />
+                        </div>
+                        <div className="flex-1 overflow-y-auto mt-6">
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Resultados</p>
+                            {filteredAttendances.length === 0 ? (
+                                <p className="text-xs text-slate-400 font-bold italic">No se encontraron marcas</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {filteredAttendances.slice(0, 10).map(att => (
+                                        <div key={att.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs font-black uppercase italic leading-none">{att.userName}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold mt-1">{new Date(att.timestamp).toLocaleString()}</p>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase ${getTypeColor(att.type)}`}>{att.type}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => setShowSearchOverlay(false)}
+                            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs mt-4 shadow-xl shadow-blue-500/20"
+                        >
+                            Ver Resultados
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Selección de Marca - Diseño Circular ES V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "success": "#22c55e",
+                        "warning": "#f59e0b",
+                        "danger": "#ef4444",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .circular-layout {
+                position: relative;
+                width: 340px;
+                height: 340px;
+            }
+            .action-btn {
+                position: absolute;
+                width: 96px;
+                height: 96px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border-radius: 9999px;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                transition: transform 0.1s ease;
+            }
+            .action-btn:active {
+                transform: scale(0.92);
+            }
+            .btn-clock-in { top: 0; left: 50%; transform: translate(-50%, -20%); }
+            .btn-break-in { top: 50%; right: 0; transform: translate(20%, -50%); }
+            .btn-break-out { bottom: 0; left: 50%; transform: translate(-50%, 20%); }
+            .btn-clock-out { top: 50%; left: 0; transform: translate(-20%, -50%); }
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+<header class="p-6 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined font-bold">corporate_fare</span>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Terminal 04</p>
+<h2 class="text-sm font-bold">OFICINA CENTRAL</h2>
+</div>
+</div>
+<div class="text-right">
+<h1 class="text-xl font-bold text-primary">10:47 AM</h1>
+<p class="text-[10px] text-slate-500 font-medium">Lunes, 24 de Oct</p>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center px-6 relative">
+<div class="text-center mb-12">
+<h2 class="text-2xl font-bold tracking-tight">Bienvenido, Alex</h2>
+<p class="text-slate-500 dark:text-slate-400 font-medium">Identidad verificada con éxito</p>
+</div>
+<div class="circular-layout flex items-center justify-center">
+<div class="relative z-10 w-48 h-48 rounded-full border-4 border-white dark:border-slate-800 shadow-2xl overflow-hidden bg-slate-200">
+<img alt="Foto del empleado" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEdfM098Ky1D2lAuQMuUtzjKKP3DWhHXZkI_aADy1GjjwXcPLBYJm7Jsd7ksOBaskSkGltqc-CDki-x1SXnEFdYfJ01v2OlO1my_zSOadspcrwOVsuwxKn9BRjULTQ4cyl5U5iYME1bla2eZaVnIm0MtVLEYYKjPDwj5C3bJyfA-S8LwNsmh3YgljkCcCr3Wt19Cum5rGxUfYOz3F6vKVvvVZDOp17rIOzHGVf1ef-Hlv31ntA5dTXtEzgz95bt4-n5kEII_4WPxU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-0 right-0 text-center">
+<span class="bg-success text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">Verificado</span>
+</div>
+</div>
+<button class="action-btn btn-clock-in bg-success text-white">
+<span class="material-symbols-outlined text-3xl">login</span>
+<span class="text-[10px] font-black mt-1 uppercase">Entrada</span>
+</button>
+<button class="action-btn btn-break-in bg-warning text-white">
+<span class="material-symbols-outlined text-3xl">coffee</span>
+<span class="text-[10px] font-black mt-1 uppercase text-center leading-tight">Inicio<br/>Descanso</span>
+</button>
+<button class="action-btn btn-break-out bg-primary text-white">
+<span class="material-symbols-outlined text-3xl">resume</span>
+<span class="text-[10px] font-black mt-1 uppercase text-center leading-tight">Fin<br/>Descanso</span>
+</button>
+<button class="action-btn btn-clock-out bg-danger text-white">
+<span class="material-symbols-outlined text-3xl">logout</span>
+<span class="text-[10px] font-black mt-1 uppercase">Salida</span>
+</button>
+<div class="absolute inset-0 rounded-full border border-slate-200 dark:border-slate-700 pointer-events-none opacity-50"></div>
+</div>
+<div class="mt-16 text-center max-w-[240px]">
+<p class="text-slate-400 dark:text-slate-500 text-sm font-medium">Seleccione una acción para registrar su asistencia en este turno.</p>
+</div>
+</main>
+<footer class="p-8 flex flex-col items-center gap-4">
+<div class="flex flex-col items-center gap-6">
+<button class="px-8 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold flex items-center gap-2 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-lg">close</span>
+                Cancelar
+            </button>
+<div class="flex flex-col items-center gap-2">
+<div class="flex items-center gap-2 text-primary font-semibold text-sm">
+<span class="material-symbols-outlined text-base">timer</span>
+<span>Cerrando sesión en 10s...</span>
+</div>
+<p class="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold">Sistema de Asistencia Seguro v3.0</p>
+</div>
+</div>
+</footer>
+
+</body></html>

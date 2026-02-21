@@ -10,7 +10,7 @@ const vapidKeys = {
 };
 
 webpush.setVapidDetails(
-    'mailto:admin@anep.edu.uy',
+    'mailto:admin@biocloud.com',
     vapidKeys.publicKey,
     vapidKeys.privateKey
 );
@@ -35,9 +35,21 @@ const pool = new Pool({
     database: 'kiosk_db',
 });
 
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../dist')));
+
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 app.use(auth);
+
+// Serve index.html for any non-API routes (SPA support)
+app.get(/^(?!\/api).*$/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -111,6 +123,17 @@ app.put('/api/devices/:id/status', async (req, res) => {
         await pool.query('UPDATE devices SET status = $1 WHERE id = $2', [status, req.params.id]);
         res.json({ success: true });
     } catch (err) {
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+app.put('/api/devices/:id', async (req, res) => {
+    const { name } = req.body;
+    try {
+        await pool.query('UPDATE devices SET name = $1 WHERE id = $2', [name, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating device:', err);
         res.status(500).json({ error: 'Update failed' });
     }
 });
@@ -195,13 +218,25 @@ app.post('/api/attendance', async (req, res) => {
         await sendNotificationToEmployee(userDni, {
             title: `Registro Exitoso: ${type}`,
             body: `${userName}, tu marca ha sido procesada correctamente.`,
-            icon: '/logo_anep.png'
+            icon: '/logo.png'
         });
 
         res.json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error saving attendance record' });
+    }
+});
+
+// Get attendance records (for sync)
+app.get('/api/attendance', async (req, res) => {
+    try {
+        // Limit to prevent huge payloads. Can add date filters later.
+        const result = await pool.query('SELECT * FROM attendance_records ORDER BY timestamp DESC LIMIT 1000');
+        res.json(result.rows);
+    } catch (err) {
+        console.error('[Sync Error] GET attendance:', err);
+        res.status(500).json({ error: 'Database error' });
     }
 });
 

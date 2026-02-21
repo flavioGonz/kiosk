@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { type User } from '../db';
 import { CheckCircle2, Printer, X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { brandingService } from '../services/brandingService';
 
 interface TicketPrinterProps {
     user: User;
@@ -13,12 +14,10 @@ interface TicketPrinterProps {
 
 export function TicketPrinter({ user, type, timestamp, onDone }: TicketPrinterProps) {
     const [showPrintConfirm, setShowPrintConfirm] = useState(true);
-    const [isPrinting, setIsPrinting] = useState(false);
     const dateStr = new Date(timestamp).toLocaleString();
     const ticketId = `TK-${user.dni}-${timestamp}`;
 
     const handlePrint = () => {
-        setIsPrinting(true);
         setShowPrintConfirm(false);
 
         // This triggers the browser print dialog.
@@ -101,31 +100,74 @@ export function TicketPrinter({ user, type, timestamp, onDone }: TicketPrinterPr
             )}
 
             {/* Hidden Print-only Template */}
-            <div className="hidden print:block fixed inset-0 bg-white text-black p-4 font-mono text-center">
-                <div className="border-b-2 border-black pb-4 mb-4 flex flex-col items-center">
-                    <h2 className="text-xl font-bold leading-none uppercase">ANEP - ASISTENCIA</h2>
-                    <p className="text-[10px] font-bold tracking-widest mt-1">SISTEMA TÓTEM BIOMÉTRICO</p>
-                </div>
+            <div className="hidden print:block bg-white text-black font-mono">
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @page {
+                        size: 80mm auto;
+                        margin: 0;
+                    }
+                    @media print {
+                        /* Force everything to hide */
+                        body *, html * {
+                            visibility: hidden !important;
+                            height: 0 !important;
+                            overflow: hidden !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
+                        /* Show only the ticket container and its children */
+                        .print-container, .print-container * {
+                            visibility: visible !important;
+                            height: auto !important;
+                            overflow: visible !important;
+                            display: block !important;
+                        }
+                        .print-container {
+                            position: absolute !important;
+                            left: 0 !important;
+                            top: 0 !important;
+                            width: 80mm !important;
+                            padding: 4mm !important;
+                            background: white !important;
+                            z-index: 99999 !important;
+                        }
+                        html, body {
+                            background: white !important;
+                            width: 80mm !important;
+                            height: auto !important;
+                        }
+                    }
+                `}} />
 
-                <div className="space-y-4">
-                    <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-600">Funcionario</p>
-                        <p className="text-base font-bold">{user.name}</p>
-                        <p className="text-[10px]">DNI: {user.dni}</p>
+                <div className="print-container">
+                    <div className="border-b-2 border-black pb-2 mb-3 flex flex-col items-center">
+                        <h2 className="text-sm font-black leading-none uppercase">{brandingService.getConfig().clientName}</h2>
+                        <p className="text-[7px] font-black tracking-[0.2em] mt-1 whitespace-nowrap">CONTROL DE ASISTENCIA</p>
                     </div>
 
-                    <div className="border-y border-dashed border-black py-2">
-                        <p className="text-xl font-bold uppercase">{type}</p>
-                        <p className="text-[10px] mt-1">{dateStr}</p>
-                    </div>
+                    <div className="space-y-2 text-center">
+                        <div>
+                            <p className="text-[7px] uppercase font-bold text-gray-500">Funcionario</p>
+                            <p className="text-sm font-black uppercase tracking-tight leading-none mb-1">{user.name}</p>
+                            <p className="text-[8px] font-bold">DNI: {user.dni}</p>
+                        </div>
 
-                    <div className="flex justify-center p-4">
-                        <QRCodeSVG value={JSON.stringify({ name: user.name, dni: user.dni, timestamp, type })} size={120} />
-                    </div>
+                        <div className="border-y-2 border-dashed border-black py-2">
+                            <p className="text-base font-black uppercase leading-none">{type}</p>
+                            <p className="text-[9px] mt-1 font-bold italic">{dateStr}</p>
+                        </div>
 
-                    <div className="text-[8px] leading-tight">
-                        <p>ID: {ticketId}</p>
-                        <p className="mt-1 italic">Conserve este comprobante para su control personal.</p>
+                        <div className="flex justify-center py-2">
+                            <QRCodeSVG value={JSON.stringify({ n: user.name, d: user.dni, t: timestamp, m: type })} size={100} />
+                        </div>
+
+                        <div className="text-[7px] leading-tight pt-1">
+                            <p className="font-bold uppercase tracking-widest">Verificación Biométrica OK</p>
+                            <p className="mt-0.5 opacity-60">ID: {ticketId}</p>
+                            <div className="h-8" />
+                            <p className="text-[6px] border-t border-black pt-1">Fin de Comprobante</p>
+                        </div>
                     </div>
                 </div>
             </div>

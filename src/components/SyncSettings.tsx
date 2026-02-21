@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertCircle } from 'lucide-react';
+import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertCircle, Palette, Image as ImageIcon, Type, Globe } from 'lucide-react';
 import { syncService } from '../services/syncService';
 import { subscribeUser } from '../services/notificationService';
+import { brandingService } from '../services/brandingService';
+import type { BrandingConfig } from '../services/brandingService';
 
 type DbType = 'none' | 'mysql' | 'postgres';
-type SettingsSection = 'sync' | 'database' | 'tables' | 'pwa';
+type SettingsSection = 'sync' | 'database' | 'tables' | 'pwa' | 'branding';
 
 interface TableMapping {
     local: string;
@@ -36,13 +38,13 @@ const DEFAULT_TABLES: TableMapping[] = [
 ];
 
 export function SyncSettings() {
-    const [activeSection, setActiveSection] = useState<SettingsSection>('sync');
+    const [activeSection, setActiveSection] = useState<SettingsSection>('branding');
     const [serverUrl, setServerUrl] = useState('');
     const [apiKey, setApiKey] = useState('flavio20');
     const [enabled, setEnabled] = useState(false);
     const [testing, setTesting] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number } | null>(null);
+    const [syncResult, setSyncResult] = useState<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number; alreadyUpToDate?: boolean } | null>(null);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [showSyncModal, setShowSyncModal] = useState(false);
 
@@ -61,6 +63,9 @@ export function SyncSettings() {
     // PWA Install prompt
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [serverOnline, setServerOnline] = useState(false);
+
+    // Branding State
+    const [brandConfig, setBrandConfig] = useState<BrandingConfig>(brandingService.getConfig());
 
     useEffect(() => {
         const config = syncService.getConfig();
@@ -110,8 +115,10 @@ export function SyncSettings() {
 
     const handleSaveConfig = () => {
         syncService.updateConfig({ serverUrl, apiKey, enabled });
+        brandingService.updateConfig(brandConfig);
         localStorage.setItem('dbConfig', JSON.stringify({ type: dbType, host: dbHost, port: dbPort, name: dbName, user: dbUser, password: dbPassword }));
         localStorage.setItem('tableMappings', JSON.stringify(tables));
+        alert('Configuración guardada correctamente.');
     };
 
     const handleToggleEnabled = () => {
@@ -124,7 +131,7 @@ export function SyncSettings() {
         setTesting(true);
         setTestResult(null);
         try {
-            syncService.updateConfig({ serverUrl, apiKey, enabled: false });
+            syncService.updateConfig({ serverUrl, apiKey, enabled });
             const result = await syncService.testConnection();
             setTestResult(result);
         } catch (e) {
@@ -139,7 +146,7 @@ export function SyncSettings() {
         setShowSyncModal(true);
         setSyncResult(null);
         try {
-            const result = await syncService.fullSync();
+            const result = await syncService.fullSync(true); // Pass true for manual smart sync
             setSyncResult(result);
         } catch (e) {
             console.error('Manual sync failed:', e);
@@ -182,6 +189,7 @@ export function SyncSettings() {
     );
 
     const sections = [
+        { id: 'branding' as const, label: 'Identidad & Branding', icon: Palette, desc: 'Logos, colores y textos' },
         { id: 'sync' as const, label: 'Sincronización Cloud', icon: Server, desc: 'API y conectividad remota' },
         { id: 'database' as const, label: 'Base de Datos Local', icon: Database, desc: 'Persistencia externa' },
         { id: 'tables' as const, label: 'Mapeo de Tablas', icon: Table, desc: 'Estructura de datos' },
@@ -224,7 +232,7 @@ export function SyncSettings() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="Endpoint de API" type="text" value={serverUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServerUrl(e.target.value)} placeholder="https://cloud.anep.edu.uy/api" />
+                                <InputField label="Endpoint de API" type="text" value={serverUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServerUrl(e.target.value)} placeholder="https://tu-servidor.com/api" />
                                 {serverUrl.includes('localhost') && (
                                     <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tight ml-4 flex items-center gap-1">
                                         <AlertCircle size={10} /> Advertencia: 'localhost' solo funciona en este PC. Usa la IP del servidor para totems remotos.
@@ -323,10 +331,10 @@ export function SyncSettings() {
                                                 </div>
 
                                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic mb-2">
-                                                    {syncing ? 'Sincronizando...' : syncResult?.success ? '¡Sincronización Exitosa!' : 'Error de Conexión'}
+                                                    {syncing ? 'Sincronizando...' : syncResult?.alreadyUpToDate ? '¡Datos al día!' : syncResult?.success ? '¡Sincronización Exitosa!' : 'Error de Conexión'}
                                                 </h3>
                                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-8">
-                                                    {syncing ? 'Transferiendo datos biométricos' : syncResult?.success ? 'Proceso finalizado correctamente' : 'Verifique su conexión a internet o URL'}
+                                                    {syncing ? 'Transfiriendo datos biométricos' : syncResult?.alreadyUpToDate ? 'No se detectaron cambios nuevos' : syncResult?.success ? 'Proceso finalizado correctamente' : 'Verifique su conexión a internet o URL'}
                                                 </p>
 
                                                 {syncResult && (
@@ -371,6 +379,75 @@ export function SyncSettings() {
                         </motion.div>
                     )}
 
+                    {activeSection === 'branding' && (
+                        <motion.div key="branding" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+                            <div className="flex items-center gap-3">
+                                <Palette className="text-pink-600 w-5 h-5" />
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Personalización Visual</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-2 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <Type className="w-4 h-4 text-slate-400" />
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Textos de Interfaz</span>
+                                    </div>
+                                    <InputField label="Título de la Aplicación" value={brandConfig.appTitle} onChange={(e: any) => setBrandConfig({ ...brandConfig, appTitle: e.target.value })} />
+                                    <InputField label="Subtítulo / Eslogan" value={brandConfig.appSubtitle} onChange={(e: any) => setBrandConfig({ ...brandConfig, appSubtitle: e.target.value })} />
+                                    <InputField label="Nombre Corto (Cliente)" value={brandConfig.clientName} onChange={(e: any) => setBrandConfig({ ...brandConfig, clientName: e.target.value })} />
+                                    <InputField label="Mensaje de Bienvenida" value={brandConfig.welcomeMessage} onChange={(e: any) => setBrandConfig({ ...brandConfig, welcomeMessage: e.target.value })} />
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-2 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <ImageIcon className="w-4 h-4 text-slate-400" />
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activos Visuales</span>
+                                    </div>
+                                    <InputField label="URL del Logo (PNG/SVG)" value={brandConfig.logoUrl} onChange={(e: any) => setBrandConfig({ ...brandConfig, logoUrl: e.target.value })} placeholder="/logo.png" />
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 ml-0.5 italic">Color Principal</label>
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="color"
+                                                value={brandConfig.primaryColor}
+                                                onChange={(e) => setBrandConfig({ ...brandConfig, primaryColor: e.target.value })}
+                                                className="w-12 h-12 rounded-xl border-2 border-slate-200 cursor-pointer overflow-hidden p-0"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={brandConfig.primaryColor}
+                                                onChange={(e) => setBrandConfig({ ...brandConfig, primaryColor: e.target.value })}
+                                                className="flex-1 px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 bg-slate-900 rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
+                                        {brandConfig.logoUrl ? (
+                                            <img src={brandConfig.logoUrl} alt="Preview" className="max-h-16 object-contain" />
+                                        ) : (
+                                            <span className="text-white/20 text-[10px] font-black uppercase italic">Sin Logo</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
+                                <Globe className="text-blue-500 w-5 h-5 mt-1" />
+                                <p className="text-[10px] text-blue-700 font-medium leading-relaxed">
+                                    Los cambios de branding se aplican a la interfaz web, tickets impresos y pantallas de espera.
+                                    Para cambiar los iconos del escritorio (PWA), modifique el archivo <code>manifest.json</code> y reemplace los archivos en <code>/public/icons/</code>.
+                                </p>
+                            </div>
+
+                            <button onClick={handleSaveConfig} className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg transition-all active:scale-95">
+                                <Check className="w-4 h-4" />
+                                Guardar Identidad Visual
+                            </button>
+                        </motion.div>
+                    )}
+
                     {activeSection === 'pwa' && (
                         <motion.div key="pwa" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-8">
                             <div className="flex items-center gap-3">
@@ -392,7 +469,7 @@ export function SyncSettings() {
                                         onClick={handleInstallApp}
                                         className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/10"
                                     >
-                                        Instalar Kiosco ANEP
+                                        Instalar {brandConfig.appTitle}
                                     </button>
                                 </div>
 

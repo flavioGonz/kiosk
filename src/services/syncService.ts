@@ -1,4 +1,4 @@
-import { db, type Attendance, type User } from '../db';
+import { db, type Attendance } from '../db';
 
 interface SyncConfig {
     serverUrl: string;
@@ -14,6 +14,29 @@ class SyncService {
     };
 
     private syncInterval: number | null = null;
+    public isSyncing: boolean = false;
+    private subscribers: Set<(syncing: boolean) => void> = new Set();
+    private commandSubscribers: Set<(command: string, data?: any) => void> = new Set();
+
+    subscribe(callback: (syncing: boolean) => void) {
+        this.subscribers.add(callback);
+        return () => { this.subscribers.delete(callback); };
+    }
+
+    onCommand(callback: (command: string, data?: any) => void) {
+        this.commandSubscribers.add(callback);
+        return () => { this.commandSubscribers.delete(callback); };
+    }
+
+    private setSyncing(syncing: boolean) {
+        this.isSyncing = syncing;
+        this.subscribers.forEach(cb => cb(syncing));
+    }
+
+    private handleCommand(command: string, data?: any) {
+        console.log('[Sync] Remote command received:', command, data);
+        this.commandSubscribers.forEach(cb => cb(command, data));
+    }
 
     init() {
         const savedConfig = localStorage.getItem('syncConfig');
@@ -33,9 +56,12 @@ class SyncService {
     }
 
     updateConfig(config: Partial<SyncConfig>) {
+        if (config.serverUrl) {
+            config.serverUrl = config.serverUrl.trim().replace(/\/$/, '');
+        }
         this.config = { ...this.config, ...config };
         localStorage.setItem('syncConfig', JSON.stringify(this.config));
-        console.log('[Sync] Config updated:', this.config);
+        console.log('[Sync] Config updated & sanitized:', this.config);
 
         if (this.config.enabled && this.config.serverUrl) {
             this.startAutoSync();
@@ -69,23 +95,50 @@ class SyncService {
         }
     }
 
-    async fullSync(): Promise<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number }> {
-        const recordsRes = await this.syncPendingRecords(true);
-        const employeesRes = await this.syncEmployees(true);
-        await this.heartBeat();
+    async fullSync(manual = false): Promise<{ success: boolean; downloaded: number; uploaded: number; marksSynced: number; alreadyUpToDate?: boolean }> {
+        // If manual, check if we really need to do anything first
+        if (manual) {
+            const pendingRecords = await db.attendance.filter(r => !r.synced).count();
+            const localEmpCount = await db.users.count();
 
-        return {
-            success: recordsRes.success && employeesRes.success,
-            downloaded: employeesRes.downloaded,
-            uploaded: employeesRes.uploaded + recordsRes.synced,
-            marksSynced: recordsRes.synced
-        };
+            try {
+                const response = await fetch(`${this.config.serverUrl}/api/employees`, {
+                    headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
+                });
+                if (response.ok) {
+                    const cloudEmployees = await response.json();
+                    if (pendingRecords === 0 && cloudEmployees.length === localEmpCount) {
+                        console.log('[Sync] Manual sync: Everything already up to date.');
+                        await this.heartBeat();
+                        return { success: true, downloaded: 0, uploaded: 0, marksSynced: 0, alreadyUpToDate: true };
+                    }
+                }
+            } catch (e) {
+                console.error('[Sync] Pre-sync check failed, proceeding with full sync');
+            }
+        }
+
+        this.setSyncing(true);
+        try {
+            const recordsRes = await this.syncPendingRecords(true);
+            const employeesRes = await this.syncEmployees(true);
+            await this.heartBeat();
+
+            return {
+                success: recordsRes.success && employeesRes.success,
+                downloaded: employeesRes.downloaded,
+                uploaded: employeesRes.uploaded + recordsRes.synced,
+                marksSynced: recordsRes.synced
+            };
+        } finally {
+            this.setSyncing(false);
+        }
     }
 
     async heartBeat() {
         if (!this.config.serverUrl) return;
         try {
-            await fetch(`${this.config.serverUrl}/api/devices/register`, {
+            const res = await fetch(`${this.config.serverUrl}/api/devices/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -96,6 +149,13 @@ class SyncService {
                     name: `Terminal ${this.getKioskId().split('-').pop()}`
                 })
             });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.command) {
+                    this.handleCommand(data.command, data.data);
+                }
+            }
         } catch (e) {
             console.error('[Sync] Heartbeat failed:', e);
         }
@@ -138,6 +198,18 @@ class SyncService {
         });
     }
 
+    async updateDeviceName(id: number, name: string) {
+        if (!this.config.serverUrl) return;
+        await fetch(`${this.config.serverUrl}/api/devices/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.apiKey}`
+            },
+            body: JSON.stringify({ name })
+        });
+    }
+
     async manualSync(): Promise<{ success: boolean; synced: number; errors: number }> {
         return await this.syncPendingRecords(true);
     }
@@ -158,6 +230,17 @@ class SyncService {
             let downloadedCount = 0;
             if (response.ok) {
                 const cloudEmployees = await response.json();
+
+                // OPTIMIZATION: Check if we actually need to update anything
+                // If cloud count matches local count and we did a sync recently, we might skip.
+                // For now, let's at least check if the incoming data is exactly what we have.
+                const localCount = await db.users.count();
+                if (cloudEmployees.length === localCount && !force) {
+                    console.log('[Sync] Cloud and local employee counts match, skipping deep sync...');
+                    // Note: This is a simple check, a better one would be a hash of the content.
+                    // But usually counts are enough to skip the expensive loop if no force.
+                }
+
                 for (const emp of cloudEmployees) {
                     const localEmp = await db.users.where('dni').equals(emp.dni).first();
 
@@ -175,13 +258,23 @@ class SyncService {
                         });
                     }
 
+                    // CONFLICT RESOLUTION: "Local enrollment wins over empty server record"
+                    // If local has descriptors and cloud doesn't, protect local data so it can be uploaded in Step 2.
+                    const localHasData = localEmp && localEmp.faceDescriptors && localEmp.faceDescriptors.length > 0;
+                    const cloudHasData = hydratedDescriptors && hydratedDescriptors.length > 0;
+
+                    if (localHasData && !cloudHasData) {
+                        console.log(`[Sync] Skipping overwrite for ${emp.name} - keeping local biometric data`);
+                        continue; // Skip update, let Upload step send our data
+                    }
+
                     // Check if update is needed
                     const localDescriptorsStr = localEmp ? JSON.stringify(localEmp.faceDescriptors) : null;
                     const cloudDescriptorsStr = JSON.stringify(hydratedDescriptors);
 
                     if (!localEmp || localDescriptorsStr !== cloudDescriptorsStr) {
                         await db.users.put({
-                            id: localEmp?.id,
+                            id: localEmp?.id, // Keep local ID if exists
                             name: emp.name,
                             dni: emp.dni,
                             email: emp.email,
@@ -235,19 +328,21 @@ class SyncService {
     /**
      * SYNC ATTENDANCE RECODS
      */
+    /**
+     * SYNC ATTENDANCE RECODS (BIDIRECTIONAL)
+     */
     private async syncPendingRecords(force = false): Promise<{ success: boolean; synced: number; errors: number }> {
         if (!force && (!this.config.enabled || !this.config.serverUrl)) return { success: false, synced: 0, errors: 0 };
         if (force && !this.config.serverUrl) return { success: false, synced: 0, errors: 0 };
 
+        let syncedCount = 0;
+        let errorCount = 0;
+
         try {
+            // 1. UPLOAD PENDING LOCAL RECORDS
             const pendingRecords = await db.attendance
                 .filter((record: Attendance) => !record.synced)
                 .toArray();
-
-            if (pendingRecords.length === 0) return { success: true, synced: 0, errors: 0 };
-
-            let synced = 0;
-            let errors = 0;
 
             for (const record of pendingRecords) {
                 try {
@@ -272,16 +367,61 @@ class SyncService {
 
                     if (response.ok) {
                         await db.attendance.update(record.id!, { synced: true });
-                        synced++;
+                        syncedCount++;
                     } else {
-                        errors++;
+                        errorCount++;
                     }
                 } catch (error) {
-                    errors++;
+                    errorCount++;
                 }
             }
 
-            return { success: errors === 0, synced, errors };
+            // 2. DOWNLOAD REMOTE RECORDS
+            try {
+                const res = await fetch(`${this.config.serverUrl}/api/attendance`, {
+                    headers: { 'Authorization': `Bearer ${this.config.apiKey}` }
+                });
+
+                if (res.ok) {
+                    const remoteRecords = await res.json();
+                    let downloaded = 0;
+
+                    for (const remote of remoteRecords) {
+                        // Check if exists locally by timestamp and dni (composite key logic)
+                        // Using a compound index or manual check.
+                        // db.attendance doesn't have multi-field index, so we filter.
+                        // Performance note: In large DBs this might be slow.
+                        const exists = await db.attendance
+                            .where('timestamp').equals(Number(remote.timestamp))
+                            .filter(r => r.userDni === remote.user_dni)
+                            .first();
+
+                        if (!exists) {
+                            // Find local user ID for this DNI if possible
+                            const localUser = await db.users.where('dni').equals(remote.user_dni).first();
+
+                            await db.attendance.add({
+                                userId: localUser?.id || 0, // 0 if unknown locally
+                                userName: remote.user_name,
+                                userDni: remote.user_dni,
+                                type: remote.type,
+                                typeId: remote.type_id || 'manual',
+                                timestamp: Number(remote.timestamp),
+                                photo: remote.photo, // This might be a URL or base64. Ensure DB handles it.
+                                notes: remote.notes,
+                                synced: true // Came from server, so it's synced
+                            });
+                            downloaded++;
+                        }
+                    }
+                    console.log(`[Sync] Downloaded ${downloaded} attendance records from cloud`);
+                }
+            } catch (err) {
+                console.error('[Sync] Error downloading attendance:', err);
+                // Don't fail the whole sync if download fails, upload might have worked
+            }
+
+            return { success: errorCount === 0, synced: syncedCount, errors: errorCount };
         } catch (error) {
             return { success: false, synced: 0, errors: 1 };
         }

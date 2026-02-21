@@ -1,16 +1,16 @@
 import { precacheAndRoute } from 'workbox-precaching';
 
-declare let self: ServiceWorkerGlobalScope;
+declare let self: any;
 
 precacheAndRoute(self.__WB_MANIFEST);
 
-self.addEventListener('push', (event) => {
-    const data = event.data?.json() ?? { title: 'Notificación ANEP', body: 'Nuevo mensaje del sistema.' };
+self.addEventListener('push', (event: any) => {
+    const data = event.data?.json() ?? { title: 'Notificación del Sistema', body: 'Nuevo mensaje del sistema.' };
 
     const options = {
         body: data.body,
-        icon: '/logo_anep.png',
-        badge: '/logo_anep.png',
+        icon: '/logo.png',
+        badge: '/logo.png',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),
@@ -23,9 +23,10 @@ self.addEventListener('push', (event) => {
     );
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event: any) => {
     event.notification.close();
     event.waitUntil(
+        // @ts-ignore
         self.clients.openWindow('/')
     );
 });

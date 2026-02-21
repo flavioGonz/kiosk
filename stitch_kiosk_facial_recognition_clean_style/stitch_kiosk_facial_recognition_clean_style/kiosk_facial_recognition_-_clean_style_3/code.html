@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kiosk Registro Facial - Cabecera Completa ES</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Inter', sans-serif;
+            }
+        }
+        .camera-overlay {
+            background: radial-gradient(circle, rgba(19, 127, 236, 0.02) 0%, rgba(0, 0, 0, 0.15) 100%);
+        }
+        @keyframes scan {
+            0% { top: 15%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 85%; opacity: 0; }
+        }
+        .scan-line {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #137fec, #ffffff, #137fec, transparent);
+            width: 100%;
+            position: absolute;
+            left: 0;
+            z-index: 30;
+            box-shadow: 0 0 20px 2px rgba(19, 127, 236, 0.8);
+            animation: scan 3s ease-in-out infinite;
+        }
+        .face-mesh {
+            background-image: radial-gradient(rgba(19, 127, 236, 0.4) 1px, transparent 1px);
+            background-size: 16px 16px;
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10C35 10 25 25 25 45C25 70 35 90 50 90C65 90 75 70 75 45C75 25 65 10 50 10ZM50 85C38 85 30 68 30 45C30 28 38 15 50 15C62 15 70 28 70 45C70 68 62 85 50 85Z' fill='black'/%3E%3Cpath d='M40 35C38 35 37 36 37 38C37 40 38 41 40 41C42 41 43 40 43 38C43 36 42 35 40 35ZM60 35C58 35 57 36 57 38C57 40 58 41 60 41C62 41 63 40 63 38C63 36 62 35 60 35ZM50 50C48 50 47 52 47 55C47 58 48 62 50 62C52 62 53 58 53 55C53 52 52 50 50 50ZM40 70C43 73 47 75 50 75C53 75 57 73 60 70' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
+            mask-repeat: no-repeat;
+            mask-position: center;
+            mask-size: 85%;
+        }
+        .data-points {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(#137fec 1.5px, transparent 1.5px);
+            background-size: 40px 40px;
+            opacity: 0.15;
+            z-index: 10;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#111418] dark:text-white min-h-screen flex flex-col">
+<header class="flex items-center bg-white dark:bg-[#101922] p-4 justify-between border-b border-gray-100 dark:border-gray-800">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined text-2xl text-primary">corporate_fare</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold tracking-tight text-gray-800 dark:text-gray-100 uppercase">Oficina Central</span>
+<span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Terminal #01</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]">help_outline</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center p-6 max-w-lg mx-auto w-full">
+<div class="text-center mb-10">
+<h1 class="text-6xl font-bold tracking-tight text-primary dark:text-primary mb-3">10:45 AM</h1>
+<p class="text-xl font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-[0.2em]">Lunes, 24 de Octubre</p>
+</div>
+<div class="relative w-full aspect-square max-w-[340px] mb-10">
+<div class="absolute -inset-2 border-2 border-primary/10 rounded-[2.5rem] pointer-events-none"></div>
+<div class="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-primary rounded-tl-3xl z-40"></div>
+<div class="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-primary rounded-tr-3xl z-40"></div>
+<div class="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-primary rounded-bl-3xl z-40"></div>
+<div class="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-primary rounded-br-3xl z-40"></div>
+<div class="w-full h-full rounded-3xl overflow-hidden shadow-2xl bg-gray-200 dark:bg-gray-800 relative ring-1 ring-black/5">
+<img alt="Preview de cámara" class="w-full h-full object-cover grayscale-[0.2]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEdfM098Ky1D2lAuQMuUtzjKKP3DWhHXZkI_aADy1GjjwXcPLBYJm7Jsd7ksOBaskSkGltqc-CDki-x1SXnEFdYfJ01v2OlO1my_zSOadspcrwOVsuwxKn9BRjULTQ4cyl5U5iYME1bla2eZaVnIm0MtVLEYYKjPDwj5C3bJyfA-S8LwNsmh3YgljkCcCr3Wt19Cum5rGxUfYOz3F6vKVvvVZDOp17rIOzHGVf1ef-Hlv31ntA5dTXtEzgz95bt4-n5kEII_4WPxU"/>
+<div class="absolute inset-0 camera-overlay z-10"></div>
+<div class="data-points"></div>
+<div class="absolute inset-0 face-mesh opacity-80 z-20"></div>
+<div class="scan-line"></div>
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-3 z-50 whitespace-nowrap min-w-max">
+<span class="relative flex h-2.5 w-2.5 flex-shrink-0">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+</span>
+<span class="text-[11px] font-bold text-white uppercase tracking-[0.15em] leading-none">Escaneando Rostro...</span>
+</div>
+</div>
+</div>
+<div class="text-center mb-10">
+<p class="text-gray-500 dark:text-gray-400 font-medium text-base">Posicione su rostro dentro del marco para registrar su entrada o salida</p>
+</div>
+<div class="w-full max-w-xs px-2">
+<button class="w-full flex items-center justify-center gap-3 bg-primary hover:bg-primary/95 text-white py-4 px-6 rounded-2xl shadow-lg shadow-primary/25 transition-all active:scale-95 group">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">fingerprint</span>
+<span class="text-base font-bold tracking-tight uppercase">Registrar Marca</span>
+</button>
+</div>
+</main>
+<footer class="p-6 text-center mt-auto">
+<div class="flex flex-col items-center gap-2">
+<p class="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-widest font-bold">Secure Facial Recognition Engine V2.2.0</p>
+<div class="h-1 w-12 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+</div>
+</footer>
+
+</body></html>

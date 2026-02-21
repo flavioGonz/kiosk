@@ -5,7 +5,8 @@ import { db, type User } from '../db';
 import {
     User as UserIcon, Camera, AlertCircle,
     ShieldCheck, Mail, Phone, MessageSquare, Lock,
-    CreditCard, ScanFace, RotateCcw, Fingerprint, Save
+    CreditCard, ScanFace, RotateCcw, Fingerprint, Save, Layers,
+    Network, Shield, Building
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { syncService } from '../services/syncService';
@@ -28,6 +29,23 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
     const [phone, setPhone] = useState(user?.phone || '');
     const [whatsapp, setWhatsapp] = useState(user?.whatsapp || '');
     const [pin, setPin] = useState(user?.pin || '');
+    const [sector, setSector] = useState(user?.sector || '');
+    const [role, setRole] = useState<'user' | 'manager' | 'admin' | 'superadmin'>(user?.role || 'user');
+    const [tenantId, setTenantId] = useState(user?.tenantId || '');
+    const [assignedKiosks, setAssignedKiosks] = useState<string[]>(user?.assignedKiosks || []);
+    const [availableKiosks, setAvailableKiosks] = useState<{ id: string, name: string }[]>([]);
+
+    useEffect(() => {
+        const loadDevices = async () => {
+            try {
+                const devs = await syncService.getDevices();
+                setAvailableKiosks(devs.map((d: { kiosk_id: string; name: string }) => ({ id: d.kiosk_id, name: d.name || d.kiosk_id })));
+            } catch (e) {
+                console.error("Failed to load devices", e);
+            }
+        };
+        loadDevices();
+    }, []);
 
     // Enrollment state
     const [capturedDescriptors, setCapturedDescriptors] = useState<Float32Array[]>(user?.faceDescriptors || []);
@@ -76,6 +94,10 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
             setPhone(user.phone || '');
             setWhatsapp(user.whatsapp || '');
             setPin(user.pin || '');
+            setSector(user.sector || '');
+            setRole(user.role || 'user');
+            setTenantId(user.tenantId || '');
+            setAssignedKiosks(user.assignedKiosks || []);
             setCapturedDescriptors(user.faceDescriptors || []);
             setCapturedPhotos(user.photos || []);
         }
@@ -144,14 +166,16 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
             if (isEditing && user?.id) {
                 // Update
                 await db.users.update(user.id, {
-                    name, dni, email, phone, whatsapp, pin,
+                    name, dni, email, phone, whatsapp, pin, sector,
+                    tenantId, role, assignedKiosks,
                     faceDescriptors: capturedDescriptors,
                     photos: capturedPhotos,
                 });
             } else {
                 // Create
                 await db.users.add({
-                    name, dni, email, phone, whatsapp, pin,
+                    name, dni, email, phone, whatsapp, pin, sector,
+                    tenantId, role, assignedKiosks,
                     faceDescriptors: capturedDescriptors,
                     photos: capturedPhotos,
                     createdAt: Date.now(),
@@ -168,27 +192,15 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
 
             onComplete();
         } catch (err) {
+            console.error(err);
             setError('Error al guardar. El DNI podría estar ya registrado.');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const InputField = ({ icon: Icon, label, ...props }: any) => (
-        <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
-                <Icon className="w-3 h-3" />
-                {label}
-            </label>
-            <input
-                {...props}
-                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-gray-300"
-            />
-        </div>
-    );
-
     return (
-        <div className="flex flex-col lg:flex-row gap-0 min-h-[500px]">
+        <div className="flex flex-col xl:flex-row gap-0 min-h-[500px]">
             {/* LEFT: Form Fields */}
             <div className="flex-1 p-6 lg:pr-4 overflow-y-auto">
                 {/* Header */}
@@ -261,6 +273,94 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
                             placeholder="Opcional"
                         />
+                        <InputField
+                            icon={Layers}
+                            label="Sector / Sección / Carpeta"
+                            type="text"
+                            value={sector}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSector(e.target.value)}
+                            placeholder="Ej: Administración, Depósito, Nivel 1"
+                        />
+                        <div className="md:col-span-2">
+                            <InputField
+                                icon={Building}
+                                label="Tenant ID (Empresa/Sucursal)"
+                                type="text"
+                                value={tenantId}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTenantId(e.target.value)}
+                                placeholder="Ej: EMPRESA-01 (Dejar vacío para global)"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <div className="space-y-1.5">
+                                <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Shield className="w-3 h-3" />
+                                    Rol en el Sistema
+                                </label>
+                                <select
+                                    value={role}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRole(e.target.value as 'user' | 'manager' | 'admin' | 'superadmin')}
+                                    className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                                >
+                                    <option value="user">Funcionario</option>
+                                    <option value="manager">Administrador Local (Manager)</option>
+                                    <option value="admin">Administrador Global</option>
+                                    <option value="superadmin">Superadmin</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <div className="space-y-1.5">
+                                <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Network className="w-3 h-3" />
+                                    Terminales Autorizados (Asignación Kioscos)
+                                </label>
+                                <div className="bg-slate-50 border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
+                                    <label className="flex items-center gap-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                                        <input
+                                            type="checkbox"
+                                            checked={assignedKiosks.length === 0}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setAssignedKiosks([]);
+                                            }}
+                                            className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-gray-900 uppercase">Todos los terminales (Acceso Global)</span>
+                                            <span className="text-[9px] text-gray-400 font-bold uppercase">Puede fichar en cualquier reloj de la red</span>
+                                        </div>
+                                    </label>
+                                    <div className="h-px w-full bg-slate-200 my-2" />
+                                    {availableKiosks.map(k => {
+                                        const isChecked = assignedKiosks.includes(k.id);
+                                        return (
+                                            <label key={k.id} className="flex items-center gap-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setAssignedKiosks(prev => [...prev.filter(id => id !== k.id), k.id]);
+                                                        } else {
+                                                            const next = assignedKiosks.filter(id => id !== k.id);
+                                                            // Si desmarcamos el último, vuelve a "Todos los terminales" (vacío)
+                                                            // o podemos dejarlo vacío que significa global? Mejor obligarlo a elegir si está armando lógica.
+                                                            // Un array vacío indica "todos", un array con elementos indica "estos".
+                                                            setAssignedKiosks(next);
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-gray-700 uppercase">{k.name}</span>
+                                                    <span className="text-[9px] text-gray-400 font-mono tracking-wider">{k.id}</span>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {error && (
@@ -296,11 +396,11 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
             </div>
 
             {/* DIVIDER */}
-            <div className="hidden lg:block w-px bg-gray-200 my-4" />
-            <div className="block lg:hidden h-px bg-gray-200 mx-4" />
+            <div className="hidden xl:block w-px bg-gray-200 my-4" />
+            <div className="block xl:hidden h-px bg-gray-200 mx-4" />
 
             {/* RIGHT: Enrollment / Biometrics */}
-            <div className="w-full lg:w-[320px] p-6 lg:pl-4 flex flex-col items-center">
+            <div className="w-full xl:w-[320px] p-6 lg:pl-4 flex flex-col items-center">
                 <div className="flex items-center gap-2 mb-4 w-full">
                     <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
                         <Fingerprint className="w-4 h-4 text-blue-600" />
@@ -417,3 +517,21 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
         </div>
     );
 }
+
+interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    icon: React.ElementType;
+    label: string;
+}
+
+const InputField = ({ icon: Icon, label, ...props }: InputFieldProps) => (
+    <div className="space-y-1.5">
+        <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+            <Icon className="w-3 h-3" />
+            {label}
+        </label>
+        <input
+            {...props}
+            className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-gray-300"
+        />
+    </div>
+);

@@ -1,67 +1,82 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
+    /* VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.ico', 'logo_anep.png'],
+      includeAssets: ['favicon.ico', 'logo.png'],
       manifest: {
-        id: '/?source=pwa',
-        name: 'ANEP - Control de Asistencia',
-        short_name: 'ANEP Kiosk',
-        description: 'Sistema de Control de Asistencia Funcionarios ANEP',
-        theme_color: '#ffffff',
+        id: '/',
+        name: 'BioCloud Kiosk - Sistema de Asistencia',
+        short_name: 'BioCloud',
+        description: 'Sistema de Control de Asistencia Biométrica',
+        theme_color: '#1e293b',
         background_color: '#ffffff',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         start_url: '/',
+        scope: '/',
         orientation: 'portrait',
         icons: [
           {
-            src: 'logo_anep.png',
+            src: 'logo.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           },
           {
-            src: 'logo_anep.png',
+            src: 'logo.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'logo.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'logo.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: 'logo.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'BioCloud Kiosk'
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
-        cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
-      }
-    })
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      },
+      injectManifest: {
+        globPatterns: ['**//*.{js,css,html,ico,png,svg,json,woff2}'],
+}
+}) */
   ],
   server: {
-    allowedHosts: ['kiosk.infratec.com.uy']
+    allowedHosts: ['kiosk.infratec.com.uy'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 })

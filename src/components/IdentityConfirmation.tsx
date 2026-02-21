@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Check, X, AlertCircle, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Check, X, AlertCircle, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { db, type User } from '../db';
 
 interface IdentityConfirmationProps {

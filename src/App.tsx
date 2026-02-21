@@ -12,6 +12,7 @@ import { Modal } from './components/Modal'
 import { useScannerListener } from './hooks/useScannerListener'
 import { type User } from './db'
 import { syncService } from './services/syncService'
+import { brandingService } from './services/brandingService'
 import { ProcessingSplash } from './components/ProcessingSplash'
 import { EnrollmentSplash } from './components/EnrollmentSplash'
 
@@ -28,6 +29,7 @@ function Kiosk() {
   const [serverOnline, setServerOnline] = useState(false)
   const [deviceStatus, setDeviceStatus] = useState<'approved' | 'pending' | 'blocked' | 'unregistered'>('approved')
   const [showEnrollment, setShowEnrollment] = useState(false)
+  const brand = brandingService.getConfig()
 
   // Long press for enrollment
   const longPressTimer = useRef<number | null>(null)
@@ -39,6 +41,15 @@ function Kiosk() {
   }, [])
 
 
+
+  useEffect(() => {
+    const unsub = syncService.onCommand((cmd) => {
+      if (cmd === 'ENROLL') {
+        setShowEnrollment(true)
+      }
+    });
+    return () => { unsub(); };
+  }, [])
 
   useEffect(() => {
     // Check server connection and device moderation
@@ -194,8 +205,8 @@ function Kiosk() {
               </div>
 
               <div className="space-y-3">
-                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Control de Asistencia</h1>
-                <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">Identificación Biométrica Facial</p>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">{brand.appTitle}</h1>
+                <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">{brand.appSubtitle}</p>
               </div>
             </motion.div>
           )}
@@ -267,7 +278,7 @@ function Kiosk() {
           {view === 'printer' && currentUser && attendanceType && lastTimestamp && (
             <Modal
               isOpen={true}
-              onClose={() => setView('scanner')}
+              onClose={() => setView('landing')}
               title=""
               maxWidth="max-w-lg"
             >
@@ -275,7 +286,7 @@ function Kiosk() {
                 user={currentUser}
                 type={attendanceType}
                 timestamp={lastTimestamp}
-                onDone={() => setView('scanner')}
+                onDone={() => setView('landing')}
               />
             </Modal>
           )}
@@ -348,7 +359,7 @@ function AdminView() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    if (username === 'admin' && password === 'flavio20') {
+    if ((username === 'admin' || username === 'fgonzalez@infratec.com.uy') && password === 'flavio20') {
       setIsLoggedIn(true)
       sessionStorage.setItem('adminSession', 'active')
     } else {
