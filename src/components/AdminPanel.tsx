@@ -353,6 +353,14 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                                                 <div>
                                                                     <p className="font-black text-gray-900 leading-none group-hover:text-blue-600 transition-colors uppercase tracking-tight italic">{user.name}</p>
                                                                     <p className="text-xs text-blue-600 font-mono font-bold mt-1">DNI: {user.dni}</p>
+                                                                    <div className="flex gap-1.5 mt-2">
+                                                                        <span className="px-2 py-0.5 bg-gray-100 rounded text-[9px] font-black uppercase tracking-wider text-gray-500">
+                                                                            {user.role === 'superadmin' ? 'S.Admin' : user.role === 'admin' ? 'Global' : user.role === 'manager' ? 'Local' : 'Funcionario'}
+                                                                        </span>
+                                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${!user.assignedKiosks?.length ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                                            {!user.assignedKiosks?.length ? 'Acceso Total' : `${user.assignedKiosks.length} Kioscos`}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             <div className="flex flex-col gap-2">
@@ -371,6 +379,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                                             <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">Funcionario</th>
                                                             <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">Documento</th>
                                                             <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">Sector</th>
+                                                            <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">Accesos / Rol</th>
                                                             <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">Contacto</th>
                                                             <th className="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-widest text-right">Acciones</th>
                                                         </tr>
@@ -391,6 +400,16 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                                                     <div className="flex items-center gap-2">
                                                                         <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter ${user.sector ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-gray-50 text-gray-400 italic'}`}>
                                                                             {user.sector || 'Sin Asignar'}
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                                                            {user.role === 'superadmin' ? 'Superadmin' : user.role === 'admin' ? 'Admin Global' : user.role === 'manager' ? 'Admin Local' : 'Funcionario'}
+                                                                        </span>
+                                                                        <span className={`text-[9px] font-bold uppercase tracking-tight ${!user.assignedKiosks?.length ? 'text-emerald-500' : 'text-indigo-500'}`}>
+                                                                            {!user.assignedKiosks?.length ? 'Todos los Kioscos' : `Restringido (${user.assignedKiosks.length})`}
                                                                         </span>
                                                                     </div>
                                                                 </td>
