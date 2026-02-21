@@ -8,7 +8,7 @@ interface SyncConfig {
 
 class SyncService {
     private config: SyncConfig = {
-        serverUrl: 'http://localhost:3001', // Default to our new server
+        serverUrl: `http://${window.location.hostname}:3001`, // Default to the same machine IP
         apiKey: '',
         enabled: false
     };
@@ -281,6 +281,9 @@ class SyncService {
                             phone: emp.phone,
                             whatsapp: emp.whatsapp,
                             pin: emp.pin,
+                            tenantId: emp.tenant_id,
+                            role: emp.role,
+                            assignedKiosks: emp.assigned_kiosks || [],
                             faceDescriptors: hydratedDescriptors,
                             photos: emp.photos || [],
                             falsePositives: emp.false_positives || 0,
@@ -311,6 +314,9 @@ class SyncService {
                         phone: user.phone,
                         whatsapp: user.whatsapp,
                         pin: user.pin,
+                        tenant_id: user.tenantId,
+                        role: user.role,
+                        assigned_kiosks: user.assignedKiosks,
                         face_descriptors: descriptorsToUpload,
                         photos: user.photos
                     })

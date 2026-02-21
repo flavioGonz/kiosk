@@ -3,7 +3,7 @@ import { db, type Shift } from '../db';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, Plus, Trash2, Save, X, Edit2,
-    AlertCircle, Layers
+    AlertCircle, Layers, Settings2, BarChart2
 } from 'lucide-react';
 
 export function ShiftsManagement() {
@@ -19,6 +19,12 @@ export function ShiftsManagement() {
     const [active, setActive] = useState(true);
     const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri
     const [sector, setSector] = useState('');
+    const [shiftType, setShiftType] = useState<'fijo' | 'rotativo' | 'abierto'>('fijo');
+    const [codes, setCodes] = useState<{ id: string; name: string }[]>([]);
+
+    // For adding codes
+    const [newCodeId, setNewCodeId] = useState('');
+    const [newCodeName, setNewCodeName] = useState('');
 
     const daysOfWeek = [
         { id: 1, label: 'L' },
@@ -46,21 +52,36 @@ export function ShiftsManagement() {
 
         const shiftData = {
             name,
+            type: shiftType,
             startTime,
             endTime,
             days: selectedDays,
             active,
-            sector
+            sector,
+            codes
         };
 
         if (editingId) {
             await db.shifts.update(editingId, shiftData);
         } else {
+            // @ts-ignore - codes and type were added to the interface
             await db.shifts.add(shiftData);
         }
 
         resetForm();
         loadShifts();
+    };
+
+    const handleAddCode = () => {
+        if (newCodeId.trim() && newCodeName.trim()) {
+            setCodes([...codes, { id: newCodeId.trim(), name: newCodeName.trim() }]);
+            setNewCodeId('');
+            setNewCodeName('');
+        }
+    };
+
+    const handleRemoveCode = (idToRemove: string) => {
+        setCodes(codes.filter(c => c.id !== idToRemove));
     };
 
     const handleDelete = async (id: number) => {
@@ -73,11 +94,13 @@ export function ShiftsManagement() {
     const startEditing = (shift: Shift) => {
         setEditingId(shift.id!);
         setName(shift.name);
+        setShiftType(shift.type || 'fijo');
         setStartTime(shift.startTime);
         setEndTime(shift.endTime);
         setSelectedDays(shift.days);
         setActive(shift.active);
         setSector(shift.sector || '');
+        setCodes(shift.codes || []);
         setIsAdding(true);
     };
 
@@ -85,11 +108,15 @@ export function ShiftsManagement() {
         setIsAdding(false);
         setEditingId(null);
         setName('');
+        setShiftType('fijo');
         setStartTime('09:00');
         setEndTime('18:00');
         setSelectedDays([1, 2, 3, 4, 5]);
         setActive(true);
         setSector('');
+        setCodes([]);
+        setNewCodeId('');
+        setNewCodeName('');
     };
 
     const toggleDay = (dayId: number) => {
@@ -142,11 +169,26 @@ export function ShiftsManagement() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="md:col-span-1 space-y-4">
                                 <InputField
-                                    label="Nombre del Turno"
+                                    label="Nombre del Horario"
                                     value={name}
                                     onChange={(e: any) => setName(e.target.value)}
                                     placeholder="Ej. Mañana, Administrativo"
                                 />
+                                <div className="space-y-1.5 w-full">
+                                    <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                        <Settings2 className="w-3 h-3 text-blue-500" />
+                                        Tipo de Turno
+                                    </label>
+                                    <select
+                                        value={shiftType}
+                                        onChange={(e: any) => setShiftType(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-2 ring-blue-500/20 outline-none transition-all uppercase tracking-wider"
+                                    >
+                                        <option value="fijo">Turno Fijo (Mismo horario)</option>
+                                        <option value="rotativo">Turno Rotativo</option>
+                                        <option value="abierto">Turno Abierto / Flexible</option>
+                                    </select>
+                                </div>
                                 <InputField
                                     label="Sector (Opcional)"
                                     value={sector}
@@ -201,6 +243,62 @@ export function ShiftsManagement() {
                             </div>
                         </div>
 
+                        {/* CODES SECTION */}
+                        <div className="mt-8 pt-8 border-t border-slate-100">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                    <BarChart2 className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Códigos de Tareas</h3>
+                                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Ej: "10: Fiambrería" o "20: Caja"</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4 items-start">
+                                <div className="flex-1 flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Código (ej. 10)"
+                                        value={newCodeId}
+                                        onChange={e => setNewCodeId(e.target.value)}
+                                        className="w-1/3 px-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-2 ring-blue-500/20 outline-none transition-all placeholder:text-gray-400"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Nombre de la tarea (ej. Fiambrería)"
+                                        value={newCodeName}
+                                        onChange={e => setNewCodeName(e.target.value)}
+                                        className="flex-1 px-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-2 ring-blue-500/20 outline-none transition-all placeholder:text-gray-400"
+                                    />
+                                    <button
+                                        onClick={handleAddCode}
+                                        className="px-6 py-3 bg-blue-100 text-blue-600 rounded-xl font-black text-xs uppercase hover:bg-blue-200 transition-all shadow-sm shrink-0"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 w-full bg-slate-50 rounded-xl p-4 min-h-[50px] flex flex-col gap-2 border border-slate-100">
+                                    {codes.length === 0 ? (
+                                        <span className="text-xs text-slate-400 font-bold italic tracking-widest uppercase m-auto">Sin códigos asociados</span>
+                                    ) : (
+                                        codes.map(c => (
+                                            <div key={c.id} className="flex flex-row items-center justify-between bg-white rounded-lg p-3 shadow-sm border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-black font-mono text-slate-600">{c.id}</span>
+                                                    <span className="text-[11px] font-bold text-slate-700 uppercase">{c.name}</span>
+                                                </div>
+                                                <button onClick={() => handleRemoveCode(c.id)} className="text-slate-300 hover:text-red-500">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex justify-end gap-3 mt-8">
                             <button
                                 onClick={resetForm}
@@ -237,7 +335,10 @@ export function ShiftsManagement() {
                                 </div>
                                 <div>
                                     <h4 className="font-black text-slate-900 uppercase tracking-tighter italic leading-none">{shift.name}</h4>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{shift.sector || 'Sín Sector'}</p>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <span className="text-[9px] text-white bg-blue-600 px-2 py-0.5 rounded font-bold uppercase tracking-widest">{shift.type || 'Fijo'}</span>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{shift.sector || 'Sín Sector'}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -256,6 +357,20 @@ export function ShiftsManagement() {
                                 <span className="text-sm font-black text-slate-700 italic">{shift.endTime}</span>
                             </div>
                         </div>
+
+                        {shift.codes && shift.codes.length > 0 && (
+                            <div className="mb-4">
+                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Códigos de Tareas Asignados</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {shift.codes.map(c => (
+                                        <div key={c.id} className="bg-slate-100 border border-slate-200 px-2 py-1 rounded-md flex items-center gap-1.5">
+                                            <span className="text-[9px] font-black text-slate-500 font-mono">{c.id}</span>
+                                            <span className="text-[9px] font-bold text-slate-700 uppercase">{c.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex items-center gap-1.5 pt-4 border-t border-slate-100">
                             {daysOfWeek.map(day => (

@@ -11,9 +11,9 @@ interface AttendanceScannerProps {
     onBack?: () => void;
 }
 
-import { X } from 'lucide-react';
+// X import removed
 
-export function AttendanceScanner({ onMatch, onUnknownFace, onBack }: AttendanceScannerProps) {
+export function AttendanceScanner({ onMatch, onUnknownFace }: AttendanceScannerProps) {
     const webcamRef = useRef<Webcam>(null);
     const { modelsLoaded, detectFace, matchFace } = useFaceRecognition();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -124,18 +124,7 @@ export function AttendanceScanner({ onMatch, onUnknownFace, onBack }: Attendance
                 </div>
             </motion.div>
 
-            {/* Close Button - STYLED WITH TEXT */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    className="absolute top-8 right-8 z-50 pl-4 pr-5 py-3 bg-rose-500/10 hover:bg-rose-500/20 backdrop-blur-xl rounded-full text-white transition-all active:scale-95 border border-rose-500/20 group flex items-center gap-2"
-                >
-                    <div className="p-1 bg-rose-500 rounded-full group-hover:scale-110 transition-transform shadow-lg shadow-rose-500/40">
-                        <X className="w-4 h-4 text-white" strokeWidth={3} />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/90 group-hover:text-white">Volver</span>
-                </button>
-            )}
+            {/* Close Button Removed as requested */}
 
             {/* Camera Frame */}
             <div className="relative w-[500px] aspect-[3/4] rounded-[3rem] overflow-hidden border-[12px] border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.3)] bg-black/20 backdrop-blur-3xl">

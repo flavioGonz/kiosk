@@ -174,11 +174,11 @@ app.get('/api/employees', async (req, res) => {
 
 // Register or update employee
 app.post('/api/employees', async (req, res) => {
-    const { name, dni, email, phone, whatsapp, pin, face_descriptors, photos } = req.body;
+    const { name, dni, email, phone, whatsapp, pin, tenant_id, role, assigned_kiosks, face_descriptors, photos } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO employees (name, dni, email, phone, whatsapp, pin, face_descriptors, photos)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO employees (name, dni, email, phone, whatsapp, pin, face_descriptors, photos, tenant_id, role, assigned_kiosks)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (dni) DO UPDATE SET
                 name = EXCLUDED.name,
                 email = EXCLUDED.email,
@@ -186,9 +186,12 @@ app.post('/api/employees', async (req, res) => {
                 whatsapp = EXCLUDED.whatsapp,
                 pin = EXCLUDED.pin,
                 face_descriptors = EXCLUDED.face_descriptors,
-                photos = EXCLUDED.photos
+                photos = EXCLUDED.photos,
+                tenant_id = EXCLUDED.tenant_id,
+                role = EXCLUDED.role,
+                assigned_kiosks = EXCLUDED.assigned_kiosks
              RETURNING *`,
-            [name, dni, email, phone, whatsapp, pin, JSON.stringify(face_descriptors), photos]
+            [name, dni, email, phone, whatsapp, pin, JSON.stringify(face_descriptors), photos, tenant_id, role, assigned_kiosks]
         );
         console.log(`[Sync] Saved/Updated employee: ${name} (${dni})`);
         res.json(result.rows[0]);

@@ -25,7 +25,9 @@ import {
     LayoutGrid,
     Layout,
     Folder,
-    Clock
+    Clock,
+    Briefcase,
+    Edit2
 } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';
 import { LiveMonitor } from './LiveMonitor';
@@ -35,6 +37,7 @@ import { UnknownFaces } from './UnknownFaces';
 import { DevicesManager } from './DevicesManager';
 import { EnrollmentSplash } from './EnrollmentSplash';
 import { ShiftsManagement } from './ShiftsManagement';
+import { PayrollManagement } from './PayrollManagement';
 import { Modal } from './Modal';
 import { brandingService } from '../services/brandingService';
 
@@ -46,7 +49,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
     const brand = brandingService.getConfig();
     const [users, setUsers] = useState<User[]>([]);
     const [showEnrollment, setShowEnrollment] = useState(false);
-    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown' | 'devices' | 'shifts'>('records');
+    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown' | 'devices' | 'shifts' | 'payroll'>('records');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -55,10 +58,17 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
     const [selectedSector, setSelectedSector] = useState<string | 'ALL'>('ALL');
     const [showExportMenu, setShowExportMenu] = useState(false);
 
+    // New Sector Modal State
+    const [showNewSectorModal, setShowNewSectorModal] = useState(false);
+    const [newSectorName, setNewSectorName] = useState('');
+
 
     const loadData = async () => {
         const allUsers = await db.users.toArray();
         setUsers(allUsers);
+
+        const savedSectors = localStorage.getItem('kiosk_custom_sectors');
+        if (savedSectors) setCustomSectors(JSON.parse(savedSectors));
     };
 
     useEffect(() => {
@@ -110,9 +120,90 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         return matchesSearch && matchesSector;
     });
 
-    const sectors = Array.from(new Set(users.map(u => u.sector).filter(Boolean))) as string[];
+    const [customSectors, setCustomSectors] = useState<string[]>([]);
+    const sectors = Array.from(new Set([...users.map(u => u.sector).filter(Boolean), ...customSectors])) as string[];
 
+    const handleAddSector = () => {
+        if (newSectorName && newSectorName.trim()) {
+            const newSectors = Array.from(new Set([...customSectors, newSectorName.trim()]));
+            setCustomSectors(newSectors);
+            localStorage.setItem('kiosk_custom_sectors', JSON.stringify(newSectors));
+        }
+        setShowNewSectorModal(false);
+        setNewSectorName('');
+    };
 
+    const handleEditSector = async (oldName: string) => {
+        const newName = prompt(`Nuevo nombre para el sector "${oldName}":\nDejar igual o vacío para cancelar.`, oldName);
+        if (!newName || !newName.trim() || newName === oldName) return;
+        const finalName = newName.trim();
+
+        // Update local arrays for sectors
+        let updatedCustomSectors = customSectors.map(s => s === oldName ? finalName : s);
+        if (!updatedCustomSectors.includes(finalName) && !customSectors.includes(oldName)) {
+            updatedCustomSectors.push(finalName);
+        }
+        updatedCustomSectors = Array.from(new Set(updatedCustomSectors));
+        setCustomSectors(updatedCustomSectors);
+        localStorage.setItem('kiosk_custom_sectors', JSON.stringify(updatedCustomSectors));
+
+        // Move all users inside oldName to finalName
+        const usersInSector = users.filter(u => u.sector === oldName);
+        if (usersInSector.length > 0) {
+            await Promise.all(usersInSector.map(u => db.users.update(u.id!, { sector: finalName })));
+        }
+
+        if (selectedSector === oldName) setSelectedSector(finalName);
+        await loadData();
+    };
+
+    const handleDeleteSector = async (sectorName: string) => {
+        const usersInSector = users.filter(u => u.sector === sectorName);
+
+        let targetSector = '';
+        if (usersInSector.length > 0) {
+            const move = prompt(`Hay ${usersInSector.length} funcionarios en "${sectorName}".\n\nSi deseas MOVERLOS a otro sector, escribe el nombre exacto del destino.\nSi dejas esto en BLANCO, quedarán sin sector asignado.\n\nEscribe "CANCELAR" para abortar.`);
+            if (move === null || move.toUpperCase() === 'CANCELAR') return;
+            targetSector = move.trim();
+        } else {
+            if (!confirm(`¿Estás seguro de eliminar el sector "${sectorName}"? No tiene funcionarios asignados.`)) return;
+        }
+
+        // Move users
+        if (usersInSector.length > 0) {
+            await Promise.all(usersInSector.map(u => db.users.update(u.id!, { sector: targetSector })));
+        }
+
+        let updatedCustomSectors = customSectors.filter(s => s !== sectorName);
+        if (targetSector && !updatedCustomSectors.includes(targetSector) && !sectors.includes(targetSector)) {
+            updatedCustomSectors.push(targetSector);
+        }
+
+        setCustomSectors(updatedCustomSectors);
+        localStorage.setItem('kiosk_custom_sectors', JSON.stringify(updatedCustomSectors));
+
+        if (selectedSector === sectorName) setSelectedSector('ALL');
+        await loadData();
+    };
+
+    const handleDragStart = (e: React.DragEvent, userId: number) => {
+        e.dataTransfer.setData('userId', userId.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (e: React.DragEvent, sectorName: string) => {
+        e.preventDefault();
+        const userIdStr = e.dataTransfer.getData('userId');
+        if (!userIdStr) return;
+        const userId = parseInt(userIdStr, 10);
+        if (!isNaN(userId)) {
+            await db.users.update(userId, { sector: sectorName });
+            await loadData();
+        }
+    };
 
     return (
         <div className="flex h-screen w-full font-sans overflow-hidden transition-colors duration-300 bg-slate-50 text-slate-900 border-gray-200">
@@ -153,27 +244,41 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                         collapsed={isSidebarCollapsed}
                         onClick={() => setActiveTab('monitor')}
                     />
-                    <SidebarLink
-                        icon={<Users />}
-                        label="Funcionarios"
-                        active={activeTab === 'users'}
-                        collapsed={isSidebarCollapsed}
-                        onClick={() => setActiveTab('users')}
-                    />
-                    <SidebarLink
-                        icon={<ShieldAlert />}
-                        label="Desconocidos"
-                        active={activeTab === 'unknown'}
-                        collapsed={isSidebarCollapsed}
-                        onClick={() => setActiveTab('unknown')}
-                    />
-                    <SidebarLink
-                        icon={<Clock />}
-                        label="Turnos"
-                        active={activeTab === 'shifts'}
-                        collapsed={isSidebarCollapsed}
-                        onClick={() => setActiveTab('shifts')}
-                    />
+                    <div className="pt-8 mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Empresa</p>}
+                        <SidebarLink
+                            icon={<Users />}
+                            label="Funcionarios"
+                            active={activeTab === 'users'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('users')}
+                        />
+                        <SidebarLink
+                            icon={<Clock />}
+                            label="Turnos y Códigos"
+                            active={activeTab === 'shifts'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('shifts')}
+                        />
+                        <SidebarLink
+                            icon={<Briefcase />}
+                            label="Nómina"
+                            active={activeTab === 'payroll'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('payroll')}
+                        />
+                    </div>
+
+                    <div className="pt-8 mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Seguridad</p>}
+                        <SidebarLink
+                            icon={<ShieldAlert />}
+                            label="Desconocidos"
+                            active={activeTab === 'unknown'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('unknown')}
+                        />
+                    </div>
 
                     <div className="pt-8 mb-4">
                         {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Sistema</p>}
@@ -285,9 +390,14 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                     {/* SECTOR SIDEBAR / FOLDERS */}
                                     <div className="w-full lg:w-64 space-y-4">
                                         <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
-                                            <div className="flex items-center gap-2 mb-4 px-1">
-                                                <Folder className="w-4 h-4 text-blue-600" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sectores / Carpetas</span>
+                                            <div className="flex items-center justify-between gap-2 mb-4 px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Folder className="w-4 h-4 text-blue-600" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sectores / Carpetas</span>
+                                                </div>
+                                                <button onClick={() => setShowNewSectorModal(true)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                                                    <Plus size={12} />
+                                                </button>
                                             </div>
                                             <div className="space-y-1">
                                                 <button
@@ -298,23 +408,41 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                                     <span className={`${selectedSector === 'ALL' ? 'text-blue-100' : 'text-gray-400'}`}>{users.length}</span>
                                                 </button>
                                                 {sectors.map(sector => (
-                                                    <button
+                                                    <div
                                                         key={sector}
-                                                        onClick={() => setSelectedSector(sector)}
-                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-between ${selectedSector === sector ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
+                                                        onDragOver={handleDragOver}
+                                                        onDrop={(e) => handleDrop(e, sector)}
+                                                        className="group flex gap-1 items-center"
                                                     >
-                                                        <span className="uppercase">{sector}</span>
-                                                        <span className={`${selectedSector === sector ? 'text-blue-100' : 'text-gray-400'}`}>{users.filter(u => u.sector === sector).length}</span>
-                                                    </button>
+                                                        <button
+                                                            onClick={() => setSelectedSector(sector)}
+                                                            className={`flex-1 text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-between ${selectedSector === sector ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200'}`}
+                                                        >
+                                                            <span className="uppercase truncate w-32">{sector}</span>
+                                                            <span className={`${selectedSector === sector ? 'text-blue-100' : 'text-gray-400'}`}>{users.filter(u => u.sector === sector).length}</span>
+                                                        </button>
+                                                        {selectedSector === sector && (
+                                                            <div className="flex flex-col gap-1 -ml-1">
+                                                                <button onClick={() => handleEditSector(sector)} className="p-1 rounded text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                                                    <Edit2 size={12} />
+                                                                </button>
+                                                                <button onClick={() => handleDeleteSector(sector)} className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ))}
                                                 {users.filter(u => !u.sector).length > 0 && (
-                                                    <button
-                                                        onClick={() => setSelectedSector('')}
-                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-between ${selectedSector === '' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}
-                                                    >
-                                                        <span>SIN ASIGNAR</span>
-                                                        <span className={`${selectedSector === '' ? 'text-blue-100' : 'text-gray-400'}`}>{users.filter(u => !u.sector).length}</span>
-                                                    </button>
+                                                    <div onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, '')}>
+                                                        <button
+                                                            onClick={() => setSelectedSector('')}
+                                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-between ${selectedSector === '' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200'}`}
+                                                        >
+                                                            <span>SIN ASIGNAR</span>
+                                                            <span className={`${selectedSector === '' ? 'text-blue-100' : 'text-gray-400'}`}>{users.filter(u => !u.sector).length}</span>
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -337,7 +465,12 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                         {viewMode === 'grid' ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
                                                 {users.map(user => (
-                                                    <div key={user.id} className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500/20 shadow-sm hover:shadow-xl transition-all group relative">
+                                                    <div
+                                                        key={user.id}
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, user.id!)}
+                                                        className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500/50 shadow-sm hover:shadow-xl transition-all group relative cursor-move hover:-translate-y-1"
+                                                    >
                                                         <div className="flex items-start justify-between mb-6">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="relative">
@@ -386,7 +519,12 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-50">
                                                         {filteredUsers.map(user => (
-                                                            <tr key={user.id} className="group hover:bg-gray-50/50 transition-colors">
+                                                            <tr
+                                                                key={user.id}
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, user.id!)}
+                                                                className="group hover:bg-blue-50/50 transition-colors cursor-move"
+                                                            >
                                                                 <td className="px-6 py-4">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
@@ -491,6 +629,12 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                                 <ShiftsManagement />
                             </motion.div>
                         )}
+
+                        {activeTab === 'payroll' && (
+                            <motion.div key="payroll" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full">
+                                <PayrollManagement />
+                            </motion.div>
+                        )}
                     </AnimatePresence>
                 </div>
             </main>
@@ -500,13 +644,46 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                 <EnrollmentSplash skipLogin onClose={() => { setShowEnrollment(false); loadData(); }} />
             )}
 
-            {/* MODAL FOR EDITING ONLY */}
-            <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="" maxWidth="max-w-5xl">
+            {/* FULLSCREEN SPLASH FOR EDITING ONLY */}
+            {editingUser && (
                 <UserFormModal
                     user={editingUser}
                     onComplete={() => { setEditingUser(null); loadData(); }}
                     onCancel={() => { setEditingUser(null); }}
                 />
+            )}
+
+            {/* NEW SECTOR MODAL */}
+            <Modal isOpen={showNewSectorModal} onClose={() => { setShowNewSectorModal(false); setNewSectorName(''); }} title="Nueva Área / Sector" maxWidth="max-w-md">
+                <div className="flex flex-col gap-4">
+                    <p className="text-gray-400 text-sm">Ingrese el nombre del nuevo sector o área para organizar a los funcionarios.</p>
+                    <input
+                        type="text"
+                        value={newSectorName}
+                        onChange={(e) => setNewSectorName(e.target.value)}
+                        placeholder="Ej: Administración, Sala 2..."
+                        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white focus:ring-2 ring-blue-500 outline-none transition-all placeholder:text-gray-500"
+                        autoFocus
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddSector()
+                        }}
+                    />
+                    <div className="flex justify-end gap-3 mt-4">
+                        <button
+                            onClick={() => { setShowNewSectorModal(false); setNewSectorName(''); }}
+                            className="px-5 py-2.5 rounded-xl font-bold text-xs text-gray-400 hover:bg-white/5 transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleAddSector}
+                            disabled={!newSectorName.trim()}
+                            className="px-5 py-2.5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg"
+                        >
+                            Crear Sector
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

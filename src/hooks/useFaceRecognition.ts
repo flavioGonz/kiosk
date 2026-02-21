@@ -57,7 +57,7 @@ export function useFaceRecognition() {
         }
     }, [modelsLoaded, refreshFaceMatcher]);
 
-    const detectFace = useCallback(async (videoElement: HTMLVideoElement) => {
+    const detectFace = useCallback(async (videoElement: HTMLVideoElement | HTMLImageElement) => {
         if (!modelsLoaded) return null;
 
         const detection = await faceapi

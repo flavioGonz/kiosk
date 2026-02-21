@@ -13,6 +13,7 @@ export interface User {
     photos: string[]; // Array of reference photos
     falsePositives?: number; // Counter for false positive detections
     sector?: string; // Department or area the employee belongs to
+    shiftId?: number; // Assigned shift
 
     // Multi-tenant & permissions
     tenantId?: string;
@@ -51,11 +52,13 @@ export interface UnknownFace {
 export interface Shift {
     id?: number;
     name: string;
+    type?: 'fijo' | 'rotativo' | 'abierto';
     startTime: string; // HH:mm
     endTime: string; // HH:mm
     days: number[]; // 0-6 (Sunday-Saturday)
     active: boolean;
     sector?: string; // Optional sector assignment
+    codes?: { id: string; name: string; }[]; // Task codes: e.g., "10" for "Fiambrería"
 }
 
 export class KioskDatabase extends Dexie {

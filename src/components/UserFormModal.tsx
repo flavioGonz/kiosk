@@ -6,7 +6,7 @@ import {
     User as UserIcon, Camera, AlertCircle,
     ShieldCheck, Mail, Phone, MessageSquare, Lock,
     CreditCard, ScanFace, RotateCcw, Fingerprint, Save, Layers,
-    Network, Shield, Building
+    Network, Shield, Building, Upload, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { syncService } from '../services/syncService';
@@ -34,9 +34,26 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
     const [tenantId, setTenantId] = useState(user?.tenantId || '');
     const [assignedKiosks, setAssignedKiosks] = useState<string[]>(user?.assignedKiosks || []);
     const [availableKiosks, setAvailableKiosks] = useState<{ id: string, name: string }[]>([]);
+    const [shiftId, setShiftId] = useState<number | ''>(user?.shiftId || '');
+
+    // Load config states
+    const [availableSectors, setAvailableSectors] = useState<string[]>([]);
+    const [availableShifts, setAvailableShifts] = useState<{ id: number, name: string }[]>([]);
 
     useEffect(() => {
-        const loadDevices = async () => {
+        const loadConfigs = async () => {
+            // Sectors
+            const allUsers = await db.users.toArray();
+            const customSectorsStr = localStorage.getItem('kiosk_custom_sectors');
+            const customSectors = customSectorsStr ? JSON.parse(customSectorsStr) : [];
+            const sectors = Array.from(new Set([...allUsers.map(u => u.sector).filter(Boolean), ...customSectors])) as string[];
+            setAvailableSectors(sectors);
+
+            // Shifts
+            const shifts = await db.shifts.toArray();
+            setAvailableShifts(shifts.map(s => ({ id: s.id!, name: s.name })));
+
+            // Devices
             try {
                 const devs = await syncService.getDevices();
                 setAvailableKiosks(devs.map((d: { kiosk_id: string; name: string }) => ({ id: d.kiosk_id, name: d.name || d.kiosk_id })));
@@ -44,7 +61,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                 console.error("Failed to load devices", e);
             }
         };
-        loadDevices();
+        loadConfigs();
     }, []);
 
     // Enrollment state
@@ -56,6 +73,41 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
     const [isSaving, setIsSaving] = useState(false);
     const [liveQuality, setLiveQuality] = useState<number | null>(null);
     const liveDetectionRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // New states for splashscreen logic
+    const [showCamera, setShowCamera] = useState(!isEditing);
+
+    // File upload logic
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setError(null);
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const result = event.target?.result as string;
+            const img = new Image();
+            img.onload = async () => {
+                try {
+                    const detection = await detectFace(img);
+                    if (detection) {
+                        const quality = Math.round(detection.detection.score * 100);
+                        // Simulate 3 samples so the form allows saving
+                        setCapturedDescriptors([detection.descriptor, detection.descriptor, detection.descriptor]);
+                        setCapturedPhotos([result]);
+                        setCaptureQualities([quality, quality, quality]);
+                        setShowCamera(false);
+                    } else {
+                        setError('No se detectó un rostro claro en la foto subida. Usa otra o usa la cámara.');
+                    }
+                } catch (err) {
+                    setError('Error procesando la imagen subida.');
+                }
+            };
+            img.src = result;
+        };
+        reader.readAsDataURL(file);
+    };
 
     // Live face detection polling for quality indicator
     useEffect(() => {
@@ -95,6 +147,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
             setWhatsapp(user.whatsapp || '');
             setPin(user.pin || '');
             setSector(user.sector || '');
+            setShiftId(user.shiftId || '');
             setRole(user.role || 'user');
             setTenantId(user.tenantId || '');
             setAssignedKiosks(user.assignedKiosks || []);
@@ -167,6 +220,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                 // Update
                 await db.users.update(user.id, {
                     name, dni, email, phone, whatsapp, pin, sector,
+                    shiftId: shiftId ? Number(shiftId) : undefined,
                     tenantId, role, assignedKiosks,
                     faceDescriptors: capturedDescriptors,
                     photos: capturedPhotos,
@@ -175,6 +229,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                 // Create
                 await db.users.add({
                     name, dni, email, phone, whatsapp, pin, sector,
+                    shiftId: shiftId ? Number(shiftId) : undefined,
                     tenantId, role, assignedKiosks,
                     faceDescriptors: capturedDescriptors,
                     photos: capturedPhotos,
@@ -200,9 +255,23 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
     };
 
     return (
-        <div className="flex flex-col xl:flex-row gap-0 min-h-[500px]">
+        <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="fixed inset-0 z-[100] bg-slate-50 flex flex-col xl:flex-row gap-0 overflow-y-auto"
+        >
+            {/* Header Close button (top right absolute) */}
+            <button
+                type="button"
+                onClick={onCancel}
+                className="absolute top-6 right-6 z-50 p-3 bg-white/50 backdrop-blur hover:bg-white rounded-full text-slate-400 hover:text-slate-600 transition-all shadow-sm"
+            >
+                x
+            </button>
+
             {/* LEFT: Form Fields */}
-            <div className="flex-1 p-6 lg:pr-4 overflow-y-auto">
+            <div className="flex-1 p-8 lg:p-12 overflow-y-auto pt-16">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-6">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${isEditing ? 'bg-blue-600 shadow-blue-500/20' : 'bg-green-600 shadow-green-500/20'}`}>
@@ -273,14 +342,38 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
                             placeholder="Opcional"
                         />
-                        <InputField
-                            icon={Layers}
-                            label="Sector / Sección / Carpeta"
-                            type="text"
-                            value={sector}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSector(e.target.value)}
-                            placeholder="Ej: Administración, Depósito, Nivel 1"
-                        />
+                        <div className="space-y-1.5 w-full">
+                            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                <Layers className="w-3 h-3 text-blue-500" />
+                                Sector / Carpeta
+                            </label>
+                            <select
+                                value={sector}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSector(e.target.value)}
+                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="">Sin Sector Asignado</option>
+                                {availableSectors.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5 w-full">
+                            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                <Clock className="w-3 h-3 text-blue-500" />
+                                Horario Asignado
+                            </label>
+                            <select
+                                value={shiftId}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setShiftId(e.target.value ? Number(e.target.value) : '')}
+                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="">Sin Horario Fijo</option>
+                                {availableShifts.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="md:col-span-2">
                             <InputField
                                 icon={Building}
@@ -413,12 +506,12 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
 
                 {/* Captured Photo Thumbnails */}
                 {capturedPhotos.length > 0 && (
-                    <div className="flex gap-2 mb-4 w-full flex-wrap">
+                    <div className="flex gap-2 w-full flex-wrap justify-center my-4">
                         {capturedPhotos.map((photo, i) => (
                             <div key={i} className="relative group">
                                 <img
                                     src={photo}
-                                    className="w-14 h-14 rounded-xl object-cover border-2 border-green-200 shadow-sm"
+                                    className="w-16 h-16 rounded-xl object-cover border-2 border-green-200 shadow-sm"
                                     alt={`Muestra ${i + 1}`}
                                 />
                                 <div className={`absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white text-[8px] font-black text-white ${(captureQualities[i] || 0) >= 80 ? 'bg-green-500' : (captureQualities[i] || 0) >= 50 ? 'bg-blue-500' : 'bg-amber-500'}`}>
@@ -429,75 +522,111 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                     </div>
                 )}
 
-                {/* Webcam for enrollment */}
-                <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-gray-100 shadow-inner bg-slate-100 mb-4">
-                    {!modelsLoaded ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10">
-                            <div className="w-10 h-10 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-3" />
-                            <p className="text-[9px] font-black uppercase text-blue-600 tracking-widest">Iniciando IA...</p>
-                        </div>
-                    ) : null}
-                    <Webcam
-                        ref={webcamRef}
-                        audio={false}
-                        screenshotFormat="image/jpeg"
-                        className="w-full h-full object-cover scale-x-[-1]"
-                        videoConstraints={{ facingMode: "user", width: 480, height: 640 }}
-                        onUserMediaError={() => setError('No se pudo acceder a la cámara.')}
-                    />
+                {/* Webcam or Static Photo */}
+                <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-slate-100 mb-6 flex-shrink-0">
 
-                    {/* Progress bar */}
-                    <div className="absolute top-3 left-3 right-3 flex gap-1.5">
-                        {[0, 1, 2].map(i => (
-                            <div
-                                key={i}
-                                className={`h-1 flex-1 rounded-full transition-all ${i < capturedDescriptors.length ? 'bg-green-500' : 'bg-white/30'}`}
+                    {!showCamera ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100">
+                            {capturedPhotos[0] || user?.photos?.[0] ? (
+                                <img src={capturedPhotos[0] || user?.photos?.[0]} className="w-full h-full object-cover" />
+                            ) : (
+                                <UserIcon className="w-20 h-20 text-slate-300" />
+                            )}
+                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity gap-3 backdrop-blur-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCamera(true)}
+                                    className="px-6 py-3 bg-blue-600 text-white font-black text-xs uppercase rounded-xl tracking-widest shadow-xl flex items-center gap-2"
+                                >
+                                    <Camera className="w-4 h-4" /> Activar Cámara
+                                </button>
+                                <label className="px-6 py-3 bg-white text-slate-800 font-black text-xs uppercase rounded-xl tracking-widest shadow-xl cursor-pointer flex items-center gap-2">
+                                    <Upload className="w-4 h-4" /> Subir Foto Local
+                                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                                </label>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {!modelsLoaded ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10">
+                                    <div className="w-10 h-10 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-3" />
+                                    <p className="text-[9px] font-black uppercase text-blue-600 tracking-widest">Iniciando IA...</p>
+                                </div>
+                            ) : null}
+                            <Webcam
+                                ref={webcamRef}
+                                audio={false}
+                                screenshotFormat="image/jpeg"
+                                className="w-full h-full object-cover scale-x-[-1]"
+                                videoConstraints={{ facingMode: "user", width: 480, height: 640 }}
+                                onUserMediaError={() => setError('No se pudo acceder a la cámara.')}
                             />
-                        ))}
-                    </div>
 
-                    {/* Sample Counter + Live Quality */}
-                    <div className="absolute bottom-3 inset-x-3 flex justify-center gap-2">
-                        <span className="bg-black/50 backdrop-blur-md text-white text-[8px] font-black uppercase px-3 py-1 rounded-full tracking-widest">
-                            {capturedDescriptors.length} / 3
-                        </span>
-                        {liveQuality !== null && !isCapturing && (
-                            <span className={`backdrop-blur-md text-white text-[8px] font-black uppercase px-3 py-1 rounded-full tracking-widest ${liveQuality >= 80 ? 'bg-green-500/70' : liveQuality >= 50 ? 'bg-blue-500/70' : 'bg-amber-500/70'
-                                }`}>
-                                Calidad: {liveQuality}%
-                            </span>
-                        )}
-                    </div>
+                            {/* Progress bar */}
+                            <div className="absolute top-3 left-3 right-3 flex gap-1.5">
+                                {[0, 1, 2].map(i => (
+                                    <div
+                                        key={i}
+                                        className={`h-1 flex-1 rounded-full transition-all ${i < capturedDescriptors.length ? 'bg-green-500' : 'bg-white/30'}`}
+                                    />
+                                ))}
+                            </div>
 
-                    {isCapturing && (
-                        <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-[2px] flex items-center justify-center">
-                            <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                        </div>
+                            {/* Sample Counter + Live Quality */}
+                            {showCamera && (
+                                <div className="absolute bottom-3 inset-x-3 flex justify-center gap-2">
+                                    <span className="bg-black/50 backdrop-blur-md text-white text-[8px] font-black uppercase px-3 py-1 rounded-full tracking-widest">
+                                        {capturedDescriptors.length} / 3
+                                    </span>
+                                    {liveQuality !== null && !isCapturing && (
+                                        <span className={`backdrop-blur-md text-white text-[8px] font-black uppercase px-3 py-1 rounded-full tracking-widest ${liveQuality >= 80 ? 'bg-green-500/70' : liveQuality >= 50 ? 'bg-blue-500/70' : 'bg-amber-500/70'
+                                            }`}>
+                                            Calidad: {liveQuality}%
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
+                            {isCapturing && showCamera && (
+                                <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-[2px] flex items-center justify-center">
+                                    <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
-                {/* Enrollment Actions */}
-                <div className="flex gap-2 w-full">
-                    {capturedDescriptors.length > 0 && (
+                {showCamera && (
+                    <div className="flex gap-2 w-full mb-2">
+                        {capturedDescriptors.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleResetCaptures}
+                                className="p-3 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all"
+                                title="Reiniciar capturas"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </button>
+                        )}
                         <button
                             type="button"
-                            onClick={handleResetCaptures}
-                            className="p-3 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all"
-                            title="Reiniciar capturas"
+                            onClick={handleCapture}
+                            disabled={isCapturing || !modelsLoaded}
+                            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
                         >
-                            <RotateCcw className="w-4 h-4" />
+                            <Camera className="w-4 h-4" />
+                            {isCapturing ? 'Analizando...' : capturedDescriptors.length > 0 ? `Captura ${capturedDescriptors.length + 1}ª` : 'Capturar Rostro'}
                         </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={handleCapture}
-                        disabled={isCapturing || !modelsLoaded}
-                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
-                    >
-                        <Camera className="w-4 h-4" />
-                        {isCapturing ? 'Analizando...' : capturedDescriptors.length > 0 ? `Captura ${capturedDescriptors.length + 1}ª` : 'Capturar Rostro'}
-                    </button>
-                </div>
+                    </div>
+                )}
+
+                {showCamera && (
+                    <label className="w-full px-6 py-3 bg-white border border-gray-200 text-slate-500 hover:bg-slate-50 font-black text-[9px] uppercase rounded-xl tracking-widest cursor-pointer flex justify-center items-center gap-2">
+                        <Upload className="w-3 h-3" /> Subir Foto Local
+                        <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                    </label>
+                )}
 
                 {/* Biometric Status */}
                 <div className="mt-4 w-full bg-slate-50 rounded-xl border border-gray-100 p-3 flex items-center gap-3">
@@ -514,7 +643,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                     </div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, CheckCircle, XCircle, Clock, RefreshCw, ShieldAlert, ShieldCheck, ShieldX, Pencil } from 'lucide-react';
+import { Smartphone, CheckCircle, XCircle, Clock, RefreshCw, ShieldAlert, ShieldCheck, ShieldX, Pencil, Download, HardDrive } from 'lucide-react';
 import { syncService } from '../services/syncService';
+import { db } from '../db';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Device {
@@ -17,6 +18,14 @@ export function DevicesManager() {
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [tempName, setTempName] = useState('');
+    const [localTime, setLocalTime] = useState<string>('');
+
+    useEffect(() => {
+        const timeInterval = setInterval(() => {
+            setLocalTime(new Date().toLocaleString());
+        }, 1000);
+        return () => clearInterval(timeInterval);
+    }, []);
 
     const loadDevices = async () => {
         setLoading(true);
@@ -61,6 +70,26 @@ export function DevicesManager() {
         }
     };
 
+    const handleDownloadLocalUsers = async () => {
+        const users = await db.users.toArray();
+        const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kiosk_funcionarios_${new Date().getTime()}.json`;
+        a.click();
+    };
+
+    const handleDownloadLocalAttendance = async () => {
+        const att = await db.attendance.toArray();
+        const blob = new Blob([JSON.stringify(att, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kiosk_registros_${new Date().getTime()}.json`;
+        a.click();
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -73,12 +102,37 @@ export function DevicesManager() {
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Modificación y acceso de terminales Kiosko</p>
                     </div>
                 </div>
-                <button
-                    onClick={loadDevices}
-                    className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"
-                >
-                    <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="hidden md:flex flex-col text-right mr-4">
+                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">TIEMPO LOCAL (ESTE TERMINAL)</span>
+                        <span className="text-sm font-mono font-bold text-slate-700">{localTime}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl">
+                        <button
+                            onClick={handleDownloadLocalUsers}
+                            className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+                            title="Descargar base de datos local de funcionarios"
+                        >
+                            <Download size={14} /> Funcionarios
+                        </button>
+                        <button
+                            onClick={handleDownloadLocalAttendance}
+                            className="flex items-center gap-2 px-4 py-2 bg-white text-green-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+                            title="Descargar base de datos local de registros"
+                        >
+                            <HardDrive size={14} /> Registros
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={loadDevices}
+                        className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200"
+                        title="Actualizar tabla"
+                    >
+                        <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
@@ -138,12 +192,17 @@ export function DevicesManager() {
                                             )}
                                         </div>
                                         <p className="text-[10px] text-slate-400 font-mono font-bold leading-none mb-2">{device.kiosk_id}</p>
-                                        <div className="flex items-center gap-4 text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock className="w-3 h-3" />
-                                                {isOnline ? <span className="text-emerald-600">Conectado Ahora</span> : <span>Visto: {new Date(device.last_seen).toLocaleString()}</span>}
+                                        <div className="flex items-center gap-4 text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                                            <div className="flex flex-col gap-0.5 border-r border-slate-200 pr-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3 text-slate-400" />
+                                                    <span className="text-[8px] text-slate-400">Reporte Servidor:</span>
+                                                </div>
+                                                <span className={isOnline ? "text-emerald-600 font-mono text-[10px]" : "font-mono text-[10px]"}>
+                                                    {isOnline ? "CONECTADO AHORA" : new Date(device.last_seen).toLocaleString()}
+                                                </span>
                                             </div>
-                                            {isOnline && <span className="text-emerald-600 flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Sincronizado</span>}
+                                            {isOnline && <span className="text-emerald-600 flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Sincr.</span>}
                                         </div>
                                     </div>
                                 </div>
