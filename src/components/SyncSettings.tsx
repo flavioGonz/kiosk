@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertCircle, Palette, Image as ImageIcon, Type, Globe } from 'lucide-react';
+import { Server, Check, X, RefreshCw, Wifi, WifiOff, Database, ChevronDown, Table, Pencil, Shield, Bell, Download, Smartphone, AlertCircle, Palette, Image as ImageIcon, Type, Globe, FileText } from 'lucide-react';
 import { syncService } from '../services/syncService';
 import { subscribeUser } from '../services/notificationService';
 import { brandingService } from '../services/brandingService';
 import type { BrandingConfig } from '../services/brandingService';
 
 type DbType = 'none' | 'mysql' | 'postgres';
-type SettingsSection = 'sync' | 'database' | 'tables' | 'pwa' | 'branding';
+type SettingsSection = 'sync' | 'database' | 'tables' | 'pwa' | 'branding' | 'changelog';
 
 interface TableMapping {
     local: string;
@@ -194,6 +194,7 @@ export function SyncSettings() {
         { id: 'database' as const, label: 'Base de Datos Local', icon: Database, desc: 'Persistencia externa' },
         { id: 'tables' as const, label: 'Mapeo de Tablas', icon: Table, desc: 'Estructura de datos' },
         { id: 'pwa' as const, label: 'App & Notificaciones', icon: Smartphone, desc: 'Instalación y push alerts' },
+        { id: 'changelog' as const, label: 'Historial de Cambios', icon: FileText, desc: 'Versiones y Notas' },
     ];
 
     return (
@@ -603,6 +604,43 @@ export function SyncSettings() {
                                 <Check className="w-4 h-4" />
                                 Guardar Estructura
                             </button>
+                        </motion.div>
+                    )}
+
+                    {activeSection === 'changelog' && (
+                        <motion.div key="changelog" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <FileText className="text-emerald-600 w-5 h-5" />
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Historial de Actualizaciones</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-black text-slate-900 uppercase tracking-tight text-sm">v3.1.0 - Soporte Multi-Tenant</h4>
+                                        <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full tracking-widest">Reciente</span>
+                                    </div>
+                                    <ul className="text-xs text-slate-600 space-y-2 mt-3 list-disc list-inside font-medium border-t border-slate-200 pt-3">
+                                        <li>Implementación de asignación de kiosco restringido por funcionario.</li>
+                                        <li>Roles de administrador (Superadmin, Global, Local Manager).</li>
+                                        <li>Control de acceso de terminales optimizado para la base local.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="p-5 border border-slate-200 rounded-2xl bg-white relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-black text-slate-900 uppercase tracking-tight text-sm">v3.0.0 - Nueva Consola Admin</h4>
+                                        <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full tracking-widest">Anterior</span>
+                                    </div>
+                                    <ul className="text-xs text-slate-600 space-y-2 mt-3 list-disc list-inside font-medium border-t border-slate-200 pt-3">
+                                        <li>Rediseño total de la interfaz del Kiosco y de la Consola Admin.</li>
+                                        <li>Integración biométrica optimizada sin depender de API externas.</li>
+                                        <li>Generación de reportes asistenciales y alertas en tiempo real.</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
