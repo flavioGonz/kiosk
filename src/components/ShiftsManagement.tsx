@@ -3,7 +3,7 @@ import { db, type Shift } from '../db';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, Plus, Trash2, Save, X, Edit2,
-    Calendar, CheckCircle2, AlertCircle, Layers
+    AlertCircle, Layers
 } from 'lucide-react';
 
 export function ShiftsManagement() {
@@ -190,8 +190,8 @@ export function ShiftsManagement() {
                                             key={day.id}
                                             onClick={() => toggleDay(day.id)}
                                             className={`w-10 h-10 rounded-xl font-black text-xs transition-all border ${selectedDays.includes(day.id)
-                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                                                    : 'bg-white border-slate-200 text-slate-400 hover:border-blue-400'
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                                : 'bg-white border-slate-200 text-slate-400 hover:border-blue-400'
                                                 }`}
                                         >
                                             {day.label}
@@ -263,8 +263,8 @@ export function ShiftsManagement() {
                                     key={day.id}
                                     title={day.label}
                                     className={`w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-black transition-all ${shift.days.includes(day.id)
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-300'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-100 text-slate-300'
                                         }`}
                                 >
                                     {day.label}
