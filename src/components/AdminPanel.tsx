@@ -27,7 +27,8 @@ import {
     Folder,
     Clock,
     Briefcase,
-    Edit2
+    Edit2,
+    FileText
 } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';
 import { LiveMonitor } from './LiveMonitor';
@@ -37,6 +38,7 @@ import { UnknownFaces } from './UnknownFaces';
 import { DevicesManager } from './DevicesManager';
 import { ShiftsManagement } from './ShiftsManagement';
 import { PayrollManagement } from './PayrollManagement';
+import { ChangelogTab } from './ChangelogTab';
 import { Modal } from './Modal';
 import { brandingService } from '../services/brandingService';
 
@@ -48,7 +50,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
     const brand = brandingService.getConfig();
     const [users, setUsers] = useState<User[]>([]);
     const [showEnrollment, setShowEnrollment] = useState(false);
-    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown' | 'devices' | 'shifts' | 'payroll'>('records');
+    const [activeTab, setActiveTab] = useState<'monitor' | 'users' | 'records' | 'settings' | 'unknown' | 'devices' | 'shifts' | 'payroll' | 'changelog'>('records');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -229,22 +231,26 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1 mt-6">
-                    <SidebarLink
-                        icon={<Activity />}
-                        label="Registros"
-                        active={activeTab === 'records'}
-                        collapsed={isSidebarCollapsed}
-                        onClick={() => setActiveTab('records')}
-                    />
-                    <SidebarLink
-                        icon={<Monitor />}
-                        label="Tiempo Real"
-                        active={activeTab === 'monitor'}
-                        collapsed={isSidebarCollapsed}
-                        onClick={() => setActiveTab('monitor')}
-                    />
-                    <div className="pt-8 mb-4">
-                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Empresa</p>}
+                    <div className="mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Control Asistencia</p>}
+                        <SidebarLink
+                            icon={<Monitor />}
+                            label="Tiempo Real"
+                            active={activeTab === 'monitor'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('monitor')}
+                        />
+                        <SidebarLink
+                            icon={<Activity />}
+                            label="Fichadas"
+                            active={activeTab === 'records'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('records')}
+                        />
+                    </div>
+
+                    <div className="pt-4 mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Personal & Turnos</p>}
                         <SidebarLink
                             icon={<Users />}
                             label="Funcionarios"
@@ -254,46 +260,53 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                         />
                         <SidebarLink
                             icon={<Clock />}
-                            label="Turnos y Códigos"
+                            label="Planificación"
                             active={activeTab === 'shifts'}
                             collapsed={isSidebarCollapsed}
                             onClick={() => setActiveTab('shifts')}
                         />
                         <SidebarLink
                             icon={<Briefcase />}
-                            label="Nómina"
+                            label="Liquidaciones"
                             active={activeTab === 'payroll'}
                             collapsed={isSidebarCollapsed}
                             onClick={() => setActiveTab('payroll')}
                         />
                     </div>
 
-                    <div className="pt-8 mb-4">
-                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Seguridad</p>}
+                    <div className="pt-4 mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Auditoría & Seg.</p>}
                         <SidebarLink
                             icon={<ShieldAlert />}
-                            label="Desconocidos"
+                            label="Alertas / Desconocidos"
                             active={activeTab === 'unknown'}
                             collapsed={isSidebarCollapsed}
                             onClick={() => setActiveTab('unknown')}
                         />
+                        <SidebarLink
+                            icon={<FileText />}
+                            label="Historial Cambios"
+                            active={activeTab === 'changelog'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('changelog')}
+                        />
                     </div>
 
-                    <div className="pt-8 mb-4">
-                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Sistema</p>}
-                        <SidebarLink
-                            icon={<Settings />}
-                            label="Configuración"
-                            active={activeTab === 'settings'}
-                            collapsed={isSidebarCollapsed}
-                            onClick={() => setActiveTab('settings')}
-                        />
+                    <div className="pt-4 mb-4">
+                        {!isSidebarCollapsed && <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400 mb-3 px-4 font-black">Sistema Operativo</p>}
                         <SidebarLink
                             icon={<Smartphone />}
-                            label="Dispositivos"
+                            label="Terminales"
                             active={activeTab === 'devices'}
                             collapsed={isSidebarCollapsed}
                             onClick={() => setActiveTab('devices')}
+                        />
+                        <SidebarLink
+                            icon={<Settings />}
+                            label="Configuraciones"
+                            active={activeTab === 'settings'}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab('settings')}
                         />
                     </div>
                 </nav>
@@ -652,6 +665,12 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                         {!showEnrollment && !editingUser && activeTab === 'payroll' && (
                             <motion.div key="payroll" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full">
                                 <PayrollManagement />
+                            </motion.div>
+                        )}
+
+                        {!showEnrollment && !editingUser && activeTab === 'changelog' && (
+                            <motion.div key="changelog" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full">
+                                <ChangelogTab />
                             </motion.div>
                         )}
                     </AnimatePresence>
