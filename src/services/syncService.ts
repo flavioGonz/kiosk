@@ -8,7 +8,7 @@ interface SyncConfig {
 
 class SyncService {
     private config: SyncConfig = {
-        serverUrl: 'http://localhost:3001', // Default to our new server
+        serverUrl: 'https://kiosk-api.infratec.com.uy', // Default to our new server
         apiKey: '',
         enabled: false
     };

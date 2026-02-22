@@ -19,7 +19,7 @@ export const subscribeUser = async (dni: string) => {
             const registration = await navigator.serviceWorker.ready;
 
             // Get public key from server
-            const configRes = await fetch('http://localhost:3001/api/health');
+            const configRes = await fetch('https://kiosk-api.infratec.com.uy/api/health');
             const { publicKey } = await configRes.json();
 
             const subscription = await registration.pushManager.subscribe({
@@ -27,7 +27,7 @@ export const subscribeUser = async (dni: string) => {
                 applicationServerKey: urlBase64ToUint8Array(publicKey)
             });
 
-            await fetch('http://localhost:3001/api/subscribe', {
+            await fetch('https://kiosk-api.infratec.com.uy/api/subscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
