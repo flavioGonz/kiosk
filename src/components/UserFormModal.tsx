@@ -5,8 +5,8 @@ import { db, type User } from '../db';
 import {
     User as UserIcon, Camera, AlertCircle,
     ShieldCheck, Mail, Phone, MessageSquare, Lock,
-    CreditCard, ScanFace, RotateCcw, Fingerprint, Save, Layers,
-    Network, Shield, Building, Upload, Clock
+    CreditCard as IdCard, ScanFace, RotateCcw, Fingerprint, Save, Layers,
+    Network, Shield, Building, Upload, Clock, ChevronLeft, Contact, LayoutDashboard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { syncService } from '../services/syncService';
@@ -256,24 +256,22 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="fixed inset-0 z-[100] bg-slate-50 flex flex-col xl:flex-row gap-0 overflow-y-auto"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col xl:flex-row gap-0 overflow-hidden"
         >
-            {/* Header Close button (top right absolute) */}
-            <button
-                type="button"
-                onClick={onCancel}
-                className="absolute top-6 right-6 z-50 p-3 bg-white/50 backdrop-blur hover:bg-white rounded-full text-slate-400 hover:text-slate-600 transition-all shadow-sm"
-            >
-                x
-            </button>
-
             {/* LEFT: Form Fields */}
-            <div className="flex-1 p-8 lg:p-12 overflow-y-auto pt-16">
+            <div className="flex-1 p-6 lg:p-10 overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-8">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="w-10 h-10 flex items-center justify-center shrink-0 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${isEditing ? 'bg-blue-600 shadow-blue-500/20' : 'bg-green-600 shadow-green-500/20'}`}>
                         {isEditing ? <UserIcon className="text-white w-6 h-6" /> : <ScanFace className="text-white w-6 h-6" />}
                     </div>
@@ -287,104 +285,134 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                     </div>
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
+                <form onSubmit={handleSave} className="space-y-8">
+                    {/* SECTION: DATOS PERSONALES */}
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <Contact className="w-4 h-4" /> Datos Personales
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <InputField
                                 icon={UserIcon}
                                 label="Nombre Completo"
+                                value={name}
                                 type="text"
                                 required
-                                value={name}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                                 placeholder="Ej: Juan Pérez"
+                                autoFocus
                             />
-                        </div>
-                        <InputField
-                            icon={CreditCard}
-                            label="DNI / Documento"
-                            type="text"
-                            required
-                            value={dni}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDni(e.target.value)}
-                            placeholder="12345678"
-                        />
-                        <InputField
-                            icon={Lock}
-                            label="PIN Personal (6 dígitos)"
-                            type="password"
-                            maxLength={6}
-                            value={pin}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPin(e.target.value)}
-                            placeholder="Opcional"
-                        />
-                        <InputField
-                            icon={Mail}
-                            label="Correo Electrónico"
-                            type="email"
-                            value={email}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                            placeholder="correo@ejemplo.com"
-                        />
-                        <InputField
-                            icon={MessageSquare}
-                            label="WhatsApp"
-                            type="text"
-                            value={whatsapp}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWhatsapp(e.target.value)}
-                            placeholder="+598..."
-                        />
-                        <InputField
-                            icon={Phone}
-                            label="Teléfono Auxiliar"
-                            type="text"
-                            value={phone}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
-                            placeholder="Opcional"
-                        />
-                        <div className="space-y-1.5 w-full">
-                            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
-                                <Layers className="w-3 h-3 text-blue-500" />
-                                Sector / Carpeta
-                            </label>
-                            <select
-                                value={sector}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSector(e.target.value)}
-                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
-                            >
-                                <option value="">Sin Sector Asignado</option>
-                                {availableSectors.map(s => (
-                                    <option key={s} value={s}>{s}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5 w-full">
-                            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
-                                <Clock className="w-3 h-3 text-blue-500" />
-                                Horario Asignado
-                            </label>
-                            <select
-                                value={shiftId}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setShiftId(e.target.value ? Number(e.target.value) : '')}
-                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
-                            >
-                                <option value="">Sin Horario Fijo</option>
-                                {availableShifts.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="md:col-span-2">
                             <InputField
-                                icon={Building}
-                                label="Tenant ID (Empresa/Sucursal)"
+                                icon={IdCard}
+                                label="DNI o Cédula"
+                                value={dni}
                                 type="text"
-                                value={tenantId}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTenantId(e.target.value)}
-                                placeholder="Ej: EMPRESA-01 (Dejar vacío para global)"
+                                required
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDni(e.target.value)}
+                                placeholder="12345678"
+                            />
+                            <InputField
+                                icon={Lock}
+                                label="PIN (Opcional)"
+                                type="password"
+                                maxLength={6}
+                                value={pin}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPin(e.target.value)}
+                                placeholder="6 dígitos"
                             />
                         </div>
-                        <div className="md:col-span-2">
+                    </div>
+
+                    {/* SECTION: CONTACTO */}
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <Mail className="w-4 h-4" /> Información de Contacto
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <InputField
+                                icon={Mail}
+                                label="Correo Electrónico"
+                                type="email"
+                                value={email}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                                placeholder="correo@ejemplo.com"
+                            />
+                            <InputField
+                                icon={MessageSquare}
+                                label="WhatsApp"
+                                type="text"
+                                value={whatsapp}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWhatsapp(e.target.value)}
+                                placeholder="+598..."
+                            />
+                            <InputField
+                                icon={Phone}
+                                label="Teléfono Auxiliar"
+                                type="text"
+                                value={phone}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                                placeholder="Opcional"
+                            />
+                        </div>
+                    </div>
+
+                    {/* SECTION: ORGANIZACIÓN */}
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <LayoutDashboard className="w-4 h-4" /> Ubicación en la Empresa
+                        </h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <div className="space-y-1.5 w-full">
+                                <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Layers className="w-3 h-3 text-blue-500" />
+                                    Sector / Carpeta
+                                </label>
+                                <select
+                                    value={sector}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSector(e.target.value)}
+                                    className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                                >
+                                    <option value="">Sin Sector Asignado</option>
+                                    {availableSectors.map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5 w-full">
+                                <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Clock className="w-3 h-3 text-blue-500" />
+                                    Horario Asignado
+                                </label>
+                                <select
+                                    value={shiftId}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setShiftId(e.target.value ? Number(e.target.value) : '')}
+                                    className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-4 ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                                >
+                                    <option value="">Sin Horario Fijo</option>
+                                    {availableShifts.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5 w-full">
+                                <InputField
+                                    icon={Building}
+                                    label="Tenant ID (Empresa)"
+                                    type="text"
+                                    value={tenantId}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTenantId(e.target.value)}
+                                    placeholder="Dejar vacío para global"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SECTION: PERMISOS Y DISPOSITIVOS */}
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <Shield className="w-4 h-4" /> Permisos y Seguridad
+                        </h4>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                                     <Shield className="w-3 h-3" />
@@ -401,12 +429,10 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                                     <option value="superadmin">Superadmin</option>
                                 </select>
                             </div>
-                        </div>
-                        <div className="md:col-span-2">
                             <div className="space-y-1.5">
                                 <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                                     <Network className="w-3 h-3" />
-                                    Terminales Autorizados (Asignación Kioscos)
+                                    Terminales Autorizados (Kioscos)
                                 </label>
                                 <div className="bg-slate-50 border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
                                     <label className="flex items-center gap-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
@@ -419,8 +445,8 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                                             className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
                                         />
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-gray-900 uppercase">Todos los terminales (Acceso Global)</span>
-                                            <span className="text-[9px] text-gray-400 font-bold uppercase">Puede fichar en cualquier reloj de la red</span>
+                                            <span className="text-xs font-black text-gray-900 uppercase">Todos los terminales</span>
+                                            <span className="text-[9px] text-gray-400 font-bold uppercase">Acceso Global</span>
                                         </div>
                                     </label>
                                     <div className="h-px w-full bg-slate-200 my-2" />
@@ -435,11 +461,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                                                         if (e.target.checked) {
                                                             setAssignedKiosks(prev => [...prev.filter(id => id !== k.id), k.id]);
                                                         } else {
-                                                            const next = assignedKiosks.filter(id => id !== k.id);
-                                                            // Si desmarcamos el último, vuelve a "Todos los terminales" (vacío)
-                                                            // o podemos dejarlo vacío que significa global? Mejor obligarlo a elegir si está armando lógica.
-                                                            // Un array vacío indica "todos", un array con elementos indica "estos".
-                                                            setAssignedKiosks(next);
+                                                            setAssignedKiosks(assignedKiosks.filter(id => id !== k.id));
                                                         }
                                                     }}
                                                     className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
@@ -468,7 +490,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-4 border-t border-slate-100">
                         <button
                             type="button"
                             onClick={onCancel}
@@ -479,7 +501,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all shadow-lg shadow-gray-900/10 disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" />
                             {isSaving ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Registrar Funcionario'}
@@ -488,13 +510,12 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                 </form>
             </div>
 
-            {/* DIVIDER */}
-            <div className="hidden xl:block w-px bg-gray-200 my-4" />
-            <div className="block xl:hidden h-px bg-gray-200 mx-4" />
+            <div className="hidden xl:block w-px bg-slate-100 my-8 mx-0" />
+            <div className="block xl:hidden h-px bg-slate-100 mx-8 my-0" />
 
             {/* RIGHT: Enrollment / Biometrics */}
-            <div className="w-full xl:w-[320px] p-6 lg:pl-4 flex flex-col items-center">
-                <div className="flex items-center gap-2 mb-4 w-full">
+            <div className="w-full xl:w-[360px] p-6 lg:p-10 flex flex-col items-center bg-slate-50/50">
+                <div className="flex items-center gap-3 mb-6 w-full pb-4 border-b border-slate-100">
                     <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
                         <Fingerprint className="w-4 h-4 text-blue-600" />
                     </div>
@@ -643,7 +664,7 @@ export function UserFormModal({ user, onComplete, onCancel }: UserFormModalProps
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </motion.div >
     );
 }
 

@@ -35,7 +35,6 @@ import { AttendanceRecords } from './AttendanceRecords';
 import { SyncSettings } from './SyncSettings';
 import { UnknownFaces } from './UnknownFaces';
 import { DevicesManager } from './DevicesManager';
-import { EnrollmentSplash } from './EnrollmentSplash';
 import { ShiftsManagement } from './ShiftsManagement';
 import { PayrollManagement } from './PayrollManagement';
 import { Modal } from './Modal';
@@ -359,7 +358,27 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
             <main className="flex-1 flex flex-col overflow-hidden relative bg-slate-50">
                 <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent">
                     <AnimatePresence mode="wait">
-                        {activeTab === 'monitor' && (
+                        {showEnrollment && (
+                            <motion.div key="new-user" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="h-full">
+                                <UserFormModal
+                                    user={null}
+                                    onComplete={() => { setShowEnrollment(false); loadData(); }}
+                                    onCancel={() => { setShowEnrollment(false); }}
+                                />
+                            </motion.div>
+                        )}
+
+                        {editingUser && (
+                            <motion.div key="edit-user" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="h-full">
+                                <UserFormModal
+                                    user={editingUser}
+                                    onComplete={() => { setEditingUser(null); loadData(); }}
+                                    onCancel={() => { setEditingUser(null); }}
+                                />
+                            </motion.div>
+                        )}
+
+                        {!showEnrollment && !editingUser && activeTab === 'monitor' && (
                             <motion.div
                                 key="monitor"
                                 initial={{ opacity: 0, y: 10 }}
@@ -370,8 +389,8 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                             </motion.div>
                         )}
 
-                        {activeTab === 'users' && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                        {!showEnrollment && !editingUser && activeTab === 'users' && (
+                            <motion.div key="users" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="space-y-1">
                                         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Directorio de Funcionarios</h3>
@@ -600,37 +619,37 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                             </motion.div>
                         )}
 
-                        {activeTab === 'unknown' && (
+                        {!showEnrollment && !editingUser && activeTab === 'unknown' && (
                             <motion.div key="unknown" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                 <UnknownFaces />
                             </motion.div>
                         )}
 
-                        {activeTab === 'records' && (
+                        {!showEnrollment && !editingUser && activeTab === 'records' && (
                             <motion.div key="records" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                 <AttendanceRecords />
                             </motion.div>
                         )}
 
-                        {activeTab === 'settings' && (
+                        {!showEnrollment && !editingUser && activeTab === 'settings' && (
                             <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                                 <SyncSettings />
                             </motion.div>
                         )}
 
-                        {activeTab === 'devices' && (
+                        {!showEnrollment && !editingUser && activeTab === 'devices' && (
                             <motion.div key="devices" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                 <DevicesManager />
                             </motion.div>
                         )}
 
-                        {activeTab === 'shifts' && (
+                        {!showEnrollment && !editingUser && activeTab === 'shifts' && (
                             <motion.div key="shifts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                 <ShiftsManagement />
                             </motion.div>
                         )}
 
-                        {activeTab === 'payroll' && (
+                        {!showEnrollment && !editingUser && activeTab === 'payroll' && (
                             <motion.div key="payroll" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="h-full">
                                 <PayrollManagement />
                             </motion.div>
@@ -638,20 +657,6 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                     </AnimatePresence>
                 </div>
             </main>
-
-            {/* FULLSCREEN SPLASH FOR ENROLLMENT */}
-            {showEnrollment && (
-                <EnrollmentSplash skipLogin onClose={() => { setShowEnrollment(false); loadData(); }} />
-            )}
-
-            {/* FULLSCREEN SPLASH FOR EDITING ONLY */}
-            {editingUser && (
-                <UserFormModal
-                    user={editingUser}
-                    onComplete={() => { setEditingUser(null); loadData(); }}
-                    onCancel={() => { setEditingUser(null); }}
-                />
-            )}
 
             {/* NEW SECTOR MODAL */}
             <Modal isOpen={showNewSectorModal} onClose={() => { setShowNewSectorModal(false); setNewSectorName(''); }} title="Nueva Área / Sector" maxWidth="max-w-md">
